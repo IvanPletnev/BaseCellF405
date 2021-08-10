@@ -1192,34 +1192,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 
 
-//	  switch (gerconState){
-//	  case 0:
-//		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 50){
-// 				  gerconCounter++;
-//			  } else {
-//				  gerconCounter = 0;
-//				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-//				  gerconState++;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//	  case 1:
-//		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 500){
-//				  gerconCounter++;
-//			  } else {
-//				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-//				  gerconCounter = 0;
-//				  gerconState = 0;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//	  }
+	  switch (gerconState){
+	  case 0:
+		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+			  if (gerconCounter < 50){
+ 				  gerconCounter++;
+			  } else {
+				  gerconCounter = 0;
+				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+				  gerconState++;
+			  }
+		  } else {
+			  gerconCounter = 0;
+		  }
+		  break;
+	  case 1:
+		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+			  if (gerconCounter < 500){
+				  gerconCounter++;
+			  } else {
+				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+				  gerconCounter = 0;
+				  gerconState = 0;
+			  }
+		  } else {
+			  gerconCounter = 0;
+		  }
+		  break;
+	  }
   }
 
   if (htim->Instance == TIM7) {
