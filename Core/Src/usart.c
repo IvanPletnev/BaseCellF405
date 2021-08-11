@@ -58,7 +58,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				sensors->source = CV_USART_SRC;
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 				break;
-			case CV_RESP_PACK_ID:
+			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
 				allConsumersDisable();
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);

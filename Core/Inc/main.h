@@ -76,9 +76,6 @@ void allConsumersDisable(void);
 #define SENSORS_PWR_GPIO_Port GPIOC
 #define GPIO__12V_1_Pin GPIO_PIN_0
 #define GPIO__12V_1_GPIO_Port GPIOC
-#define ADXL2_INT_Pin GPIO_PIN_1
-#define ADXL2_INT_GPIO_Port GPIOC
-#define ADXL2_INT_EXTI_IRQn EXTI1_IRQn
 #define WKUP_Pin GPIO_PIN_0
 #define WKUP_GPIO_Port GPIOA
 #define GPIO__12V_2_Pin GPIO_PIN_1

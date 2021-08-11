@@ -104,7 +104,7 @@ uint16_t gerconCounter = 0;
 uint16_t cvRequestCounter = 0;
 uint8_t gerconState = 0;
 
-const uint8_t cvTimeoutResponse[7] = {0xAA, 0x08, 0x07, 0x11, 0x00, 0, 0x55};
+const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t flag;
 /* USER CODE END PV */
@@ -188,7 +188,7 @@ int main(void)
   HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
   HAL_TIM_Base_Start_IT(&htim11);
 
-  	HAL_I2C_DeInit(&hi2c2);
+//  	HAL_I2C_DeInit(&hi2c2);
 	TLA2024_Init();
 	APDS9960_Init();
   /* USER CODE END 2 */
@@ -223,19 +223,19 @@ int main(void)
 
   /* Create the thread(s) */
   /* definition and creation of defaultTask */
-  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
+  osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 256);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
   /* definition and creation of lightMeter */
-  osThreadDef(lightMeter, lightMeterTask, osPriorityNormal, 0, 128);
+  osThreadDef(lightMeter, lightMeterTask, osPriorityNormal, 0, 256);
   lightMeterHandle = osThreadCreate(osThread(lightMeter), NULL);
 
   /* definition and creation of accel */
-  osThreadDef(accel, accelTask, osPriorityNormal, 0, 128);
+  osThreadDef(accel, accelTask, osPriorityNormal, 0, 256);
   accelHandle = osThreadCreate(osThread(accel), NULL);
 
   /* definition and creation of tempMeas */
-  osThreadDef(tempMeas, tempMeasTask, osPriorityNormal, 0, 128);
+  osThreadDef(tempMeas, tempMeasTask, osPriorityNormal, 0, 256);
   tempMeasHandle = osThreadCreate(osThread(tempMeas), NULL);
 
   /* definition and creation of uartComm */
@@ -281,13 +281,12 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
-  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
-  RCC_OscInitStruct.PLL.PLLM = 8;
-  RCC_OscInitStruct.PLL.PLLN = 120;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 4;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
@@ -303,7 +302,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -325,7 +324,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -819,12 +818,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ADXL2_INT_Pin */
-  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : WKUP_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -840,7 +833,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : ADXL1_INT_Pin */
   GPIO_InitStruct.Pin = ADXL1_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ADXL1_INT_GPIO_Port, &GPIO_InitStruct);
 
@@ -880,9 +873,6 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GERCON_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -955,7 +945,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 //	if (GPIO_Pin == GPIO_PIN_0) {
 //		osSignalSet(defaultTaskHandle, CV_EXT_INTERRUPT_ID);
 //	}
-	if (GPIO_Pin == GPIO_PIN_1) {
+	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
 	}
 	if (GPIO_Pin == GPIO_PIN_12) {
@@ -1192,42 +1182,42 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	  }
 
 
-	  switch (gerconState){
-	  case 0:
-		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-			  if (gerconCounter < 50){
- 				  gerconCounter++;
-			  } else {
-				  gerconCounter = 0;
-				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-				  gerconState++;
-			  }
-		  } else {
-			  gerconCounter = 0;
-		  }
-		  break;
-	  case 1:
-		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-			  if (gerconCounter < 500){
-				  gerconCounter++;
-			  } else {
-				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-				  gerconCounter = 0;
-				  gerconState = 0;
-			  }
-		  } else {
-			  gerconCounter = 0;
-		  }
-		  break;
-	  }
+//	  switch (gerconState){
+//	  case 0:
+//		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+//			  if (gerconCounter < 50){
+// 				  gerconCounter++;
+//			  } else {
+//				  gerconCounter = 0;
+//				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+//				  gerconState++;
+//			  }
+//		  } else {
+//			  gerconCounter = 0;
+//		  }
+//		  break;
+//	  case 1:
+//		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+//			  if (gerconCounter < 500){
+//				  gerconCounter++;
+//			  } else {
+//				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+//				  gerconCounter = 0;
+//				  gerconState = 0;
+//			  }
+//		  } else {
+//			  gerconCounter = 0;
+//		  }
+//		  break;
+//	  }
   }
 
   if (htim->Instance == TIM7) {
 	  HAL_TIM_Base_Stop_IT(&htim7);
 	  sensor1 = osMailAlloc(qSensorsHandle, 0);
 	  sensor1->source = CV_RESP_SOURCE;
-	  sensor1->payload[5] = get_check_sum(sensor1->payload, 7);
-	  memcpy (sensor1->payload, cvTimeoutResponse,7);
+	  sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
+	  memcpy (sensor1->payload, cvTimeoutResponse,8);
 	  osMailPut(qSensorsHandle, sensor1);
   }
   /* USER CODE END Callback 0 */
