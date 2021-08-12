@@ -18,7 +18,11 @@ extern UART_HandleTypeDef huart2;
 extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
-TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim13;
+extern uint32_t osTickCounter;
+extern uint32_t osTickCounterOld;
+
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 uint8_t dimmingTime = 0x32;
@@ -62,8 +66,10 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				sensors->source = CV_RESP_SOURCE;
 				allConsumersDisable();
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
-				HAL_TIM_Base_Stop_IT(&htim7);
-				__HAL_TIM_SET_COUNTER(&htim7, 0);
+				osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
+				HAL_TIM_Base_Stop_IT(&htim13);
+				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+				__HAL_TIM_SET_COUNTER(&htim13, 0);
 				break;
 			default:
 				break;
@@ -242,9 +248,11 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			engineState = ENGINE_STOPPED;
 			flag = 0;
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			osTickCounterOld = xTaskGetTickCount();
 			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
-			__HAL_TIM_SET_COUNTER(&htim7, 0);
-			HAL_TIM_Base_Start_IT(&htim7);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
 			break;
 
 		case CMD_SET_DIMMING_TIME:

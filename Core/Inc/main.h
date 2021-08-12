@@ -76,14 +76,15 @@ void allConsumersDisable(void);
 #define SENSORS_PWR_GPIO_Port GPIOC
 #define GPIO__12V_1_Pin GPIO_PIN_0
 #define GPIO__12V_1_GPIO_Port GPIOC
+#define ADXL2_INT_Pin GPIO_PIN_1
+#define ADXL2_INT_GPIO_Port GPIOC
+#define ADXL2_INT_EXTI_IRQn EXTI1_IRQn
 #define WKUP_Pin GPIO_PIN_0
 #define WKUP_GPIO_Port GPIOA
 #define GPIO__12V_2_Pin GPIO_PIN_1
 #define GPIO__12V_2_GPIO_Port GPIOA
 #define TXRX2_Pin GPIO_PIN_4
 #define TXRX2_GPIO_Port GPIOA
-#define ADXL1_INT_Pin GPIO_PIN_4
-#define ADXL1_INT_GPIO_Port GPIOC
 #define GPIO__5V_1_Pin GPIO_PIN_5
 #define GPIO__5V_1_GPIO_Port GPIOC
 #define FAN_2_Pin GPIO_PIN_0
@@ -115,8 +116,6 @@ void allConsumersDisable(void);
 #define BUZZER_GPIO_Port GPIOB
 #define GERCON_Pin GPIO_PIN_5
 #define GERCON_GPIO_Port GPIOB
-#define FAN_PWM_Pin GPIO_PIN_8
-#define FAN_PWM_GPIO_Port GPIOB
 #define ALT_KEY_Pin GPIO_PIN_9
 #define ALT_KEY_GPIO_Port GPIOB
 /* USER CODE BEGIN Private defines */
@@ -136,7 +135,7 @@ void allConsumersDisable(void);
 #define	BL_AUTO_CONTROL_SRC	6
 #define	CV_REQ_SOURCE		7
 #define CV_RESP_SOURCE		8
-#define CV_RESP_SIZE		7
+#define CV_RESP_SIZE		8
 #define BL_AUTO_CTL_SIZE	12
 #define	APDS_SIZE			16
 #define	ADXL_SIZE			6
@@ -154,6 +153,7 @@ void allConsumersDisable(void);
 #define RASP_IN_PACK_ID		3
 #define BL_OUT_PACK_ID		4
 #define RASP_RESP_PACK_ID	0x0F
+#define RASP_RESP_SIZE		8
 #define CV_PACK_ID			5
 #define CV_REQ_PACK_ID		7
 #define CV_RESP_PACK_ID		8

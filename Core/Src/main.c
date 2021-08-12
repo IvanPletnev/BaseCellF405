@@ -61,10 +61,9 @@ SPI_HandleTypeDef hspi1;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
-TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
+TIM_HandleTypeDef htim13;
 
-UART_HandleTypeDef huart5;
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
 UART_HandleTypeDef huart6;
@@ -104,6 +103,9 @@ uint16_t gerconCounter = 0;
 uint16_t cvRequestCounter = 0;
 uint8_t gerconState = 0;
 
+uint32_t osTickCounter = 0;
+uint32_t osTickCounterOld = 0;
+
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t flag;
@@ -118,13 +120,12 @@ static void MX_I2C2_Init(void);
 static void MX_I2C3_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_TIM3_Init(void);
-static void MX_TIM10_Init(void);
-static void MX_UART5_Init(void);
 static void MX_USART1_UART_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_USART6_UART_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM11_Init(void);
+static void MX_TIM13_Init(void);
 void StartDefaultTask(void const * argument);
 void lightMeterTask(void const * argument);
 void accelTask(void const * argument);
@@ -175,13 +176,12 @@ int main(void)
   MX_I2C3_Init();
   MX_SPI1_Init();
   MX_TIM3_Init();
-  MX_TIM10_Init();
-  MX_UART5_Init();
   MX_USART1_UART_Init();
   MX_USART2_UART_Init();
   MX_USART6_UART_Init();
   MX_TIM7_Init();
   MX_TIM11_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(TXRX6_GPIO_Port, TXRX6_Pin, RESET);
 
@@ -191,6 +191,7 @@ int main(void)
 //  	HAL_I2C_DeInit(&hi2c2);
 	TLA2024_Init();
 	APDS9960_Init();
+	HAL_TIM_Base_Stop_IT(&htim13);
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -460,6 +461,7 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 0 */
 
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
   TIM_MasterConfigTypeDef sMasterConfig = {0};
   TIM_OC_InitTypeDef sConfigOC = {0};
 
@@ -467,11 +469,20 @@ static void MX_TIM3_Init(void)
 
   /* USER CODE END TIM3_Init 1 */
   htim3.Instance = TIM3;
-  htim3.Init.Prescaler = 59;
+  htim3.Init.Prescaler = 83;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim3.Init.Period = 499;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
   {
     Error_Handler();
@@ -515,9 +526,9 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 59;
+  htim7.Init.Prescaler = 16799;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim7.Init.Period = 65535;
+  htim7.Init.Period = 10000;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim7) != HAL_OK)
   {
@@ -532,52 +543,6 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
-
-}
-
-/**
-  * @brief TIM10 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_TIM10_Init(void)
-{
-
-  /* USER CODE BEGIN TIM10_Init 0 */
-
-  /* USER CODE END TIM10_Init 0 */
-
-  TIM_OC_InitTypeDef sConfigOC = {0};
-
-  /* USER CODE BEGIN TIM10_Init 1 */
-
-  /* USER CODE END TIM10_Init 1 */
-  htim10.Instance = TIM10;
-  htim10.Init.Prescaler = 0;
-  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 65535;
-  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
-  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_TIM_PWM_Init(&htim10) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 0;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
-  if (HAL_TIM_PWM_ConfigChannel(&htim10, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN TIM10_Init 2 */
-
-  /* USER CODE END TIM10_Init 2 */
-  HAL_TIM_MspPostInit(&htim10);
 
 }
 
@@ -597,7 +562,7 @@ static void MX_TIM11_Init(void)
 
   /* USER CODE END TIM11_Init 1 */
   htim11.Instance = TIM11;
-  htim11.Init.Prescaler = 119;
+  htim11.Init.Prescaler = 167;
   htim11.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim11.Init.Period = 999;
   htim11.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
@@ -613,35 +578,33 @@ static void MX_TIM11_Init(void)
 }
 
 /**
-  * @brief UART5 Initialization Function
+  * @brief TIM13 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_UART5_Init(void)
+static void MX_TIM13_Init(void)
 {
 
-  /* USER CODE BEGIN UART5_Init 0 */
+  /* USER CODE BEGIN TIM13_Init 0 */
 
-  /* USER CODE END UART5_Init 0 */
+  /* USER CODE END TIM13_Init 0 */
 
-  /* USER CODE BEGIN UART5_Init 1 */
+  /* USER CODE BEGIN TIM13_Init 1 */
 
-  /* USER CODE END UART5_Init 1 */
-  huart5.Instance = UART5;
-  huart5.Init.BaudRate = 115200;
-  huart5.Init.WordLength = UART_WORDLENGTH_8B;
-  huart5.Init.StopBits = UART_STOPBITS_1;
-  huart5.Init.Parity = UART_PARITY_NONE;
-  huart5.Init.Mode = UART_MODE_TX_RX;
-  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
-  if (HAL_UART_Init(&huart5) != HAL_OK)
+  /* USER CODE END TIM13_Init 1 */
+  htim13.Instance = TIM13;
+  htim13.Init.Prescaler = 167;
+  htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim13.Init.Period = 19999;
+  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN UART5_Init 2 */
+  /* USER CODE BEGIN TIM13_Init 2 */
 
-  /* USER CODE END UART5_Init 2 */
+  /* USER CODE END TIM13_Init 2 */
 
 }
 
@@ -790,7 +753,6 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOC, SENSORS_PWR_Pin|GPIO__12V_1_Pin|GPIO__5V_1_Pin|TXRX6_Pin
@@ -818,6 +780,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : ADXL2_INT_Pin */
+  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : WKUP_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -830,12 +798,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : ADXL1_INT_Pin */
-  GPIO_InitStruct.Pin = ADXL1_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ADXL1_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : FAN_2_Pin FAN_Pin GPIO__12V_3_Pin RASP_KEY_Pin
                            DHT22_1_Pin ALT_KEY_Pin */
@@ -873,6 +835,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GERCON_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
   HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
@@ -945,7 +910,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 //	if (GPIO_Pin == GPIO_PIN_0) {
 //		osSignalSet(defaultTaskHandle, CV_EXT_INTERRUPT_ID);
 //	}
-	if (GPIO_Pin == GPIO_PIN_4) {
+	if (GPIO_Pin == GPIO_PIN_1) {
 		osSignalSet(accelHandle, 0x01);
 	}
 	if (GPIO_Pin == GPIO_PIN_12) {
@@ -1181,7 +1146,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  osMailPut(qSensorsHandle, sensor);
 	  }
 
-
 //	  switch (gerconState){
 //	  case 0:
 //		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
@@ -1212,12 +1176,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //	  }
   }
 
-  if (htim->Instance == TIM7) {
-	  HAL_TIM_Base_Stop_IT(&htim7);
+  if (htim->Instance == TIM13) {
+	  HAL_TIM_Base_Stop_IT(&htim13);
+	  __HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 	  sensor1 = osMailAlloc(qSensorsHandle, 0);
 	  sensor1->source = CV_RESP_SOURCE;
+	  sensor1->size = RASP_RESP_SIZE;
 	  sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
 	  memcpy (sensor1->payload, cvTimeoutResponse,8);
+
+	  osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 	  osMailPut(qSensorsHandle, sensor1);
   }
   /* USER CODE END Callback 0 */
