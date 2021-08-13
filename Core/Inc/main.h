@@ -85,6 +85,8 @@ void allConsumersDisable(void);
 #define GPIO__12V_2_GPIO_Port GPIOA
 #define TXRX2_Pin GPIO_PIN_4
 #define TXRX2_GPIO_Port GPIOA
+#define CAM_ON_Pin GPIO_PIN_7
+#define CAM_ON_GPIO_Port GPIOA
 #define GPIO__5V_1_Pin GPIO_PIN_5
 #define GPIO__5V_1_GPIO_Port GPIOC
 #define FAN_2_Pin GPIO_PIN_0

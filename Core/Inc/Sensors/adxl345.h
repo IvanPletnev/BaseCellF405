@@ -63,8 +63,6 @@
 #define ADXL345_Z           0x02
 
 extern void ADXL345_Init(void);
-extern SPI_HandleTypeDef hspi1;
-extern SPI_HandleTypeDef hspi2;
 /**
  * ADXL345 triple axis, digital interface, accelerometer.
  */

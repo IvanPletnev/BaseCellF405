@@ -26,7 +26,7 @@ extern uint32_t osTickCounterOld;
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 uint8_t dimmingTime = 0x32;
-uint8_t flag = 0;
+uint8_t engineSwitchFlag = 0;
 
 usartErrT usartError = 0;
 
@@ -66,7 +66,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				sensors->source = CV_RESP_SOURCE;
 				allConsumersDisable();
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
-				osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
+//				osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 				HAL_TIM_Base_Stop_IT(&htim13);
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 				__HAL_TIM_SET_COUNTER(&htim13, 0);
@@ -246,13 +246,41 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			engineState = ENGINE_STOPPED;
-			flag = 0;
+			engineSwitchFlag = 0;
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
-			osTickCounterOld = xTaskGetTickCount();
 			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
+			break;
+
+		case CMD_CHARGER_OFF:
+			destTempBuf[1] = CV_REQ_PACK_ID;
+			destTempBuf[2] = CV_REQ_SIZE;
+			destTempBuf[3] = CMD_CHARGER_OFF;
+			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			setTxMode(6);
+			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
+			break;
+
+		case CMD_BACKLIGHT_OFF:
+			destTempBuf[1] = CV_REQ_PACK_ID;
+			destTempBuf[2] = CV_REQ_SIZE;
+			destTempBuf[3] = CMD_BACKLIGHT_OFF;
+			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			setTxMode(6);
+			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
+			break;
+
+		case CMD_ZERO_OFF:
+			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+			sendRespToRasp(CMD_ZERO_OFF, RESPONSE_OK);
 			break;
 
 		case CMD_SET_DIMMING_TIME:
@@ -334,15 +362,15 @@ void uartCommTask(void const *argument) {
 //					if (chksum != sensors->payload[CV_RX_BUF_SIZE-2]){
 //
 //					}
-					if (!flag) {
+					if (!engineSwitchFlag) {
 						if (sensors->payload[19]) {//если двигатель запущен
-							flag = 1;
+							engineSwitchFlag = 1;
 							engineState = ENGINE_STARTED;
 							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
 					} else {
 						if (!sensors->payload[19]){//если двигатель заглушен
-							flag = 0;
+							engineSwitchFlag = 0;
 							engineState = ENGINE_STOPPED;
 //							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 						}
