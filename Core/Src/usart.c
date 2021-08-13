@@ -64,7 +64,9 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				break;
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
-				allConsumersDisable();
+				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
+					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
+				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 //				osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 				HAL_TIM_Base_Stop_IT(&htim13);
@@ -248,7 +250,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			engineState = ENGINE_STOPPED;
 			engineSwitchFlag = 0;
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
-			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
+
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
@@ -304,7 +306,7 @@ void uartCommTask(void const *argument) {
 	/* USER CODE BEGIN uartCommTask */
 	sensorsData *sensors;
 	osEvent event, evt;
-
+	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
 
@@ -324,18 +326,28 @@ void uartCommTask(void const *argument) {
 				raspTxBuf[ADXL_PACK_SIZE] = 0x55;
 				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, ADXL_PACK_SIZE); // -> В Raspberry
 
-			} else if (sensors->source == RASP_UART_SRC) { //пакет от RaspberryPi - управление подсветкой
-				cmdHandler(sensors->payload, sensors->size);
+			} else if (sensors->source == RASP_UART_SRC) { //пакет от RaspberryPi - управление подсветкой и платой управления питанием
+				cmdHandler(sensors->payload, sensors->size); //также пакет, имитирующий CMD_PWR_OFF по таймауту выключения Raspberry
 
 			} else if (sensors->source == BL_AUTO_CONTROL_SRC) { //пакет авторегулирования подсветки
 				setTxMode(2);
 				HAL_UART_Transmit_DMA(&huart2, sensors->payload, sensors->size);
 
-			} else if (sensors->source == CV_REQ_SOURCE) { //запрос к SourceSelector на телеметрию
+			} else if (sensors->source == CV_REQ_SOURCE) { //запрос к SourceSelector на телеметрию UART6
 				setTxMode(6);
 				HAL_UART_Transmit_DMA(&huart6, sensors->payload, sensors->size);
 
-			} else if (sensors->source == CV_RESP_SOURCE) { //ответ от SourceSelector на команду CMD_PWR_OFF
+			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
+
+				if (sensors->payload[4] == 1){ //Если сработал таймаут, то есть ответ от SorceSelector не получен,
+					destTempBuf[0] = 0xAA; destTempBuf[1] = CV_REQ_PACK_ID; destTempBuf[2] = CV_REQ_SIZE;
+					destTempBuf[3] = sensors->payload[3]; destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE); destTempBuf[5] = 0x55;
+					setTxMode(6);
+					HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE); //Отправляем повторную команду CMD_PWR_OFF в SourceSelector
+					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+					__HAL_TIM_SET_COUNTER(&htim13, 0);
+					HAL_TIM_Base_Start_IT(&htim13);
+				}
 				HAL_UART_Transmit_DMA(&huart1, sensors->payload, sensors->size);//транслируем в Raspberry
 
 			} else{

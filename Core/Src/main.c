@@ -44,7 +44,7 @@
 #define TIM11_DELAY_ID			0x06
 
 
-#define RASP_SHTDN_DELAY		180000
+#define RASP_SHTDN_DELAY		45000
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -103,7 +103,8 @@ uint8_t gerconState = 0;
 
 uint32_t osTickCounter = 0;
 uint32_t osTickCounterOld = 0;
-
+uint32_t raspOffTimeoutCounter = 0;
+uint8_t raspOffTimeoutFlag = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
@@ -744,11 +745,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : WKUP_Pin */
-  GPIO_InitStruct.Pin = WKUP_Pin;
+  /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
+  GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(WKUP_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPIO__12V_2_Pin TXRX2_Pin CAM_ON_Pin GPIO3_RASP_Pin */
   GPIO_InitStruct.Pin = GPIO__12V_2_Pin|TXRX2_Pin|CAM_ON_Pin|GPIO3_RASP_Pin;
@@ -773,12 +774,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(CS2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : GPIO17_RASP_Pin */
-  GPIO_InitStruct.Pin = GPIO17_RASP_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIO17_RASP_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : CS1_Pin */
   GPIO_InitStruct.Pin = CS1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -795,9 +790,6 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
@@ -872,9 +864,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 	if (GPIO_Pin == GPIO_PIN_1) {
 		osSignalSet(accelHandle, 0x01);
 	}
-	if (GPIO_Pin == GPIO_PIN_12) {
-		osMessagePut(onOffQueueHandle, RASP_17_INT_ID, 0);
-	}
+//	if (GPIO_Pin == GPIO_PIN_12) {
+//		osMessagePut(onOffQueueHandle, RASP_17_INT_ID, 0);
+//	}
 }
 /* USER CODE END 4 */
 
@@ -890,6 +882,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	osEvent event1;
 	static uint8_t powerState = 0;
+	sensorsData *sensor;
 
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
 	HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
@@ -911,14 +904,15 @@ void StartDefaultTask(void const * argument)
 				break;
 
 			case ENABLED:
-				if (event1.value.v == ENGINE_STOP_ID){
 
+				if (event1.value.v == ENGINE_STOP_ID){
+					allConsumersDisable();
 					powerState = RASPBERRY_WAIT;
 				}
 				break;
 
 			case RASPBERRY_WAIT:
-				if (event1.value.v == RASP_17_INT_ID) {
+				if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 					powerState = DISABLED;
 				}
@@ -1078,32 +1072,52 @@ void TempHumTask(void const * argument)
   * @retval None
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
-{
-  /* USER CODE BEGIN Callback 0 */
+ {
+	/* USER CODE BEGIN Callback 0 */
 	sensorsData *sensor, *sensor1;
-	uint8_t request[6] = {PACKET_HEADER, CV_REQ_PACK_ID, CV_REQ_SIZE, CMD_CV_REQUEST, 0, PACKET_FOOTER};
+	uint8_t request[6] = { PACKET_HEADER, CV_REQ_PACK_ID, CV_REQ_SIZE,
+			CMD_CV_REQUEST, 0, PACKET_FOOTER };
 	request[4] = get_check_sum(request, 6);
 
-  if (htim->Instance == TIM11){
+	if (htim->Instance == TIM11) {
 
+		if (tickCounter < 2000) {
+			tickCounter++;
+		} else {
+			tickCounter = 0;
+			osSignalSet(uartCommHandle, 0x02);
+		}
 
-	  if (tickCounter < 2000){
-		  tickCounter++;
-	  } else {
-		  tickCounter = 0;
-		  osSignalSet(uartCommHandle, 0x02);
-	  }
+		if (cvRequestCounter < 1000) {
+			cvRequestCounter++;
+		} else {
+			cvRequestCounter = 0;
+			sensor = osMailAlloc(qSensorsHandle, 0);
+			sensor->source = CV_REQ_SOURCE;
+			sensor->size = CV_REQ_SIZE;
+			memcpy(sensor->payload, request, CV_REQ_SIZE);
+			osMailPut(qSensorsHandle, sensor);
+		}
 
-	  if (cvRequestCounter < 1000){
-		  cvRequestCounter++;
-	  } else {
-		  cvRequestCounter = 0;
-		  sensor = osMailAlloc(qSensorsHandle, 0);
-		  sensor->source = CV_REQ_SOURCE;
-		  sensor->size = CV_REQ_SIZE;
-		  memcpy(sensor->payload, request, CV_REQ_SIZE);
-		  osMailPut(qSensorsHandle, sensor);
-	  }
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) { //Если Raspberry выключена,
+			if (raspOffTimeoutCounter < RASP_SHTDN_DELAY) {
+				raspOffTimeoutCounter++;
+			} else {
+				raspOffTimeoutCounter = 0;
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_PWR_OFF;
+				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				osMailPut(qSensorsHandle, sensor);
+			}
+		} else {
+			raspOffTimeoutCounter = 0;
+		}
 
 //	  switch (gerconState){
 //	  case 0:
@@ -1133,27 +1147,27 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 //		  }
 //		  break;
 //	  }
-  }
+	}
 
-  if (htim->Instance == TIM13) {
-	  HAL_TIM_Base_Stop_IT(&htim13);
-	  __HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
-	  sensor1 = osMailAlloc(qSensorsHandle, 0);
-	  sensor1->source = CV_RESP_SOURCE;
-	  sensor1->size = RASP_RESP_SIZE;
-	  sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
-	  memcpy (sensor1->payload, cvTimeoutResponse,8);
+	if (htim->Instance == TIM13) {
+		HAL_TIM_Base_Stop_IT(&htim13);
+		__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+		sensor1 = osMailAlloc(qSensorsHandle, 0);
+		sensor1->source = CV_RESP_SOURCE;
+		sensor1->size = RASP_RESP_SIZE;
+		sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
+		memcpy(sensor1->payload, cvTimeoutResponse, 8);
 
-	  osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
-	  osMailPut(qSensorsHandle, sensor1);
-  }
-  /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM6) {
-    HAL_IncTick();
-  }
-  /* USER CODE BEGIN Callback 1 */
+		osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
+		osMailPut(qSensorsHandle, sensor1);
+	}
+	/* USER CODE END Callback 0 */
+	if (htim->Instance == TIM6) {
+		HAL_IncTick();
+	}
+	/* USER CODE BEGIN Callback 1 */
 
-  /* USER CODE END Callback 1 */
+	/* USER CODE END Callback 1 */
 }
 
 /**
