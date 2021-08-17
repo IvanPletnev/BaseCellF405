@@ -42,6 +42,10 @@ typedef enum _usartErrT {
 #define CMD_CHARGER_OFF				0x14
 #define CMD_BACKLIGHT_OFF			0x15
 #define CMD_ZERO_OFF				0x16
+#define CMD_CHARGER_ON				0x17
+#define CMD_BACKLIGHT_ON			0x18
+#define CMD_ZERO_ON					0x19
+
 #define LED_DRIVER_0_ADDR			0x00
 #define LED_DRIVER_1_ADDR			0x01
 #define LED_DRIVER_2_ADDR			0x02

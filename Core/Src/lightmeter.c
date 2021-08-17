@@ -8,8 +8,10 @@
 #include "lightmeter.h"
 
 #define TAB_ENTRY_COUNT	11
+#define DISCRETE		10
 
 uint16_t lightLevel = 0;
+uint16_t lightLevel1 = 0;
 extern osMailQId qSensorsHandle;
 
 const lightData lightTable[TAB_ENTRY_COUNT] = {
@@ -51,15 +53,19 @@ uint8_t isAutoBrightnessEnable (void){
 void setAutoBrightnessPacket (sensorsData *arg){
 
 	uint8_t i = 0;
-	uint8_t autoBrValue = 0;
+	uint8_t autoBrValue = 0, autoBrValue1 = 0;
 	autoBrValue = getAutoBrightness(lightLevel);
+	autoBrValue1 = getAutoBrightness(lightLevel1);
+	autoBrValue = (autoBrValue+autoBrValue1) / 2;
+	autoBrValue = (autoBrValue + (DISCRETE / 2)) / DISCRETE;
+	autoBrValue *= DISCRETE;
 
 	arg->payload[0] = PACKET_HEADER;
 	arg->payload[1] = BL_OUT_PACK_ID;
 	arg->payload[2] = BL_AUTO_CTL_SIZE;
 	arg->payload[3] = CMD_START_IMG;
 	arg->payload[4] = BL_MODE_MAN;
-	arg->payload[5] = dimmingTime;
+	arg->payload[5] = 0x32;
 
 	for (i = 0; i < 4; i++){
 		if (brightnessValues[i] != 0){
@@ -86,7 +92,6 @@ void lightMeterTask(void const * argument) {
 	static uint8_t blue1[2];
 	sensorsData *sensors = {0};
 	sensorsData *autoBlQueue = {0};
-//	const char *testMessage = {"Hello world"};
 	osDelay(200);
 	/* Infinite loop */
 
@@ -103,6 +108,8 @@ void lightMeterTask(void const * argument) {
 
 		lightLevel = (uint16_t)light0[0] << 8;
 		lightLevel |= light0[1];
+		lightLevel1 = (uint16_t)light1[0] << 8;
+		lightLevel1 |= light1[1];
 
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = APDS_TASK_SOURCE;

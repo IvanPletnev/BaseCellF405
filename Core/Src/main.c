@@ -1007,7 +1007,7 @@ void tempMeasTask(void const * argument)
 		if (osMutexWait(I2C2MutexHandle, 50) != osOK){
 		}
 		TLA2024_Read(0, buffer0);
-//		TLA2024_Read(1, buffer1);
+		TLA2024_Read(1, buffer1);
 		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;
@@ -1072,8 +1072,8 @@ void TempHumTask(void const * argument)
   * @retval None
   */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
- {
-	/* USER CODE BEGIN Callback 0 */
+{
+  /* USER CODE BEGIN Callback 0 */
 	sensorsData *sensor, *sensor1;
 	uint8_t request[6] = { PACKET_HEADER, CV_REQ_PACK_ID, CV_REQ_SIZE,
 			CMD_CV_REQUEST, 0, PACKET_FOOTER };
@@ -1161,13 +1161,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 		osMailPut(qSensorsHandle, sensor1);
 	}
-	/* USER CODE END Callback 0 */
-	if (htim->Instance == TIM6) {
-		HAL_IncTick();
-	}
-	/* USER CODE BEGIN Callback 1 */
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM6) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
 
-	/* USER CODE END Callback 1 */
+  /* USER CODE END Callback 1 */
 }
 
 /**

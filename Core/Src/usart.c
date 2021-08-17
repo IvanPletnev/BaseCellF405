@@ -105,7 +105,7 @@ void USER_UART_IRQHandler(UART_HandleTypeDef *huart) {
 
 
 void sendRespToRasp(uint8_t cmd, uint8_t response) {
-	uint8_t responseBuf[7] = { 0 };
+	uint8_t responseBuf[8] = { 0 };
 	responseBuf[0] = 0xAA;
 	responseBuf[1] = RASP_RESP_PACK_ID;
 	responseBuf[2] = 8;
@@ -282,6 +282,38 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_ZERO_OFF:
 			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+			sendRespToRasp(CMD_ZERO_OFF, RESPONSE_OK);
+			break;
+
+		case CMD_CHARGER_ON:
+
+			destTempBuf[1] = CV_REQ_PACK_ID;
+			destTempBuf[2] = CV_REQ_SIZE;
+			destTempBuf[3] = CMD_CHARGER_ON;
+			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			setTxMode(6);
+			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim7, 0);
+			HAL_TIM_Base_Start_IT(&htim7);
+			break;
+
+		case CMD_BACKLIGHT_ON:
+
+			destTempBuf[1] = CV_REQ_PACK_ID;
+			destTempBuf[2] = CV_REQ_SIZE;
+			destTempBuf[3] = CMD_BACKLIGHT_ON;
+			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			setTxMode(6);
+			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim7, 0);
+			HAL_TIM_Base_Start_IT(&htim7);
+			break;
+
+		case CMD_ZERO_ON:
+
+			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 			sendRespToRasp(CMD_ZERO_OFF, RESPONSE_OK);
 			break;
 
