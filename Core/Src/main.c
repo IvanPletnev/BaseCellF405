@@ -43,7 +43,7 @@
 #define CV_EXT_INTERRUPT_ID 	0x05
 #define TIM11_DELAY_ID			0x06
 
-
+#define RASP_OFF_COUNTER		500
 #define RASP_SHTDN_DELAY		45000
 /* USER CODE END PD */
 
@@ -104,7 +104,10 @@ uint8_t gerconState = 0;
 uint32_t osTickCounter = 0;
 uint32_t osTickCounterOld = 0;
 uint32_t raspOffTimeoutCounter = 0;
-uint8_t raspOffTimeoutFlag = 0;
+uint16_t raspOffCounter = 0;
+uint16_t raspOnCounter = 0;
+uint8_t raspOnFlag = 0;
+uint8_t raspOffState = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
@@ -1090,6 +1093,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		if (cvRequestCounter < 1000) {
 			cvRequestCounter++;
+
 		} else {
 			cvRequestCounter = 0;
 			sensor = osMailAlloc(qSensorsHandle, 0);
@@ -1099,8 +1103,56 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			osMailPut(qSensorsHandle, sensor);
 		}
 
-		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) { //Если Raspberry выключена,
-			if (raspOffTimeoutCounter < RASP_SHTDN_DELAY) {
+
+	switch (raspOffState) {
+	case 0:
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET) {
+			if (raspOffTimeoutCounter < RASP_OFF_COUNTER) {
+				raspOffTimeoutCounter++;
+
+			} else {
+				raspOffTimeoutCounter = 0;
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_BACKLIGHT_ON;
+				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				osMailPut(qSensorsHandle, sensor);
+				raspOffState++;
+			}
+		} else {
+			raspOffTimeoutCounter = 0;
+		}
+		break;
+	case 1:
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET){
+			if (raspOffTimeoutCounter < RASP_OFF_COUNTER){
+				raspOffTimeoutCounter++;
+			} else {
+				raspOffTimeoutCounter = 0;
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_BACKLIGHT_OFF;
+				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				osMailPut(qSensorsHandle, sensor);
+				raspOffState++;
+			}
+		} else {
+			raspOffTimeoutCounter = 0;
+		}
+		break;
+	case 2:
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET){
+			if (raspOffTimeoutCounter < (RASP_SHTDN_DELAY - RASP_OFF_COUNTER)){
 				raspOffTimeoutCounter++;
 			} else {
 				raspOffTimeoutCounter = 0;
@@ -1114,10 +1166,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
 				sensor->payload[5] = 0x55;
 				osMailPut(qSensorsHandle, sensor);
+				raspOffState = 0;
 			}
 		} else {
 			raspOffTimeoutCounter = 0;
+			raspOffState = 0;
 		}
+		break;
+	}
+
+
 
 //	  switch (gerconState){
 //	  case 0:

@@ -65,6 +65,8 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
 				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
+					engineState = ENGINE_STOPPED;
+					engineSwitchFlag = 0;
 					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
