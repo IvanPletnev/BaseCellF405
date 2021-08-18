@@ -813,10 +813,10 @@ void allConsumersEnable(void) {
 
 void allConsumersDisable(void) {
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
-//	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, RESET);
-//	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, RESET);
@@ -924,7 +924,9 @@ void StartDefaultTask(void const * argument)
 						break;
 					}
 					osDelay(200);
+					counter++;
 				} else {
+					counter=0;
 					powerState = DISABLED;
 				}
 				break;
@@ -1010,6 +1012,8 @@ void tempMeasTask(void const * argument)
   /* USER CODE BEGIN tempMeasTask */
 	static uint8_t buffer0[2] = {0};
 	static uint8_t buffer1[2] = {0};
+	uint16_t temperature0 = 0;
+	uint16_t temperature1 = 0;
 	sensorsData *sensors = {0};
 
 	osDelay(500);
@@ -1019,6 +1023,10 @@ void tempMeasTask(void const * argument)
 		}
 		TLA2024_Read(0, buffer0);
 		TLA2024_Read(1, buffer1);
+		temperature0 = (uint16_t)buffer0[0] << 8;
+		temperature0 |= buffer0[1];
+		temperature1 = (uint16_t)buffer1[0] << 8;
+		temperature1 |= buffer1[1];
 		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;
