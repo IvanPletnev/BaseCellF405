@@ -17,4 +17,6 @@ typedef struct _lightdata {
 	uint8_t brightness;
 }lightData;
 
+uint8_t isAutoBrightnessEnable (void);
+
 #endif /* INC_LIGHTMETER_H_ */

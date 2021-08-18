@@ -813,10 +813,10 @@ void allConsumersEnable(void) {
 
 void allConsumersDisable(void) {
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
-	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+//	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, RESET);
-	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+//	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, RESET);
@@ -886,6 +886,7 @@ void StartDefaultTask(void const * argument)
 	osEvent event1;
 	static uint8_t powerState = 0;
 	sensorsData *sensor;
+	uint8_t counter = 0;
 
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
 	HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
@@ -915,8 +916,15 @@ void StartDefaultTask(void const * argument)
 				break;
 
 			case RASPBERRY_WAIT:
-				if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+
+				if (counter < 5){
+					if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						powerState = DISABLED;
+						break;
+					}
+					osDelay(200);
+				} else {
 					powerState = DISABLED;
 				}
 				break;
@@ -1112,16 +1120,16 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 			} else {
 				raspOffTimeoutCounter = 0;
-				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
-				sensor->source = RASP_UART_SRC;
-				sensor->size = CV_REQ_SIZE;
-				sensor->payload[0] = 0xAA;
-				sensor->payload[1] = RASP_IN_PACK_ID;
-				sensor->payload[2] = CV_REQ_SIZE;
-				sensor->payload[3] = CMD_BACKLIGHT_ON;
-				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-				sensor->payload[5] = 0x55;
-				osMailPut(qSensorsHandle, sensor);
+//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
+//				sensor->source = RASP_UART_SRC;
+//				sensor->size = CV_REQ_SIZE;
+//				sensor->payload[0] = 0xAA;
+//				sensor->payload[1] = RASP_IN_PACK_ID;
+//				sensor->payload[2] = CV_REQ_SIZE;
+//				sensor->payload[3] = CMD_BACKLIGHT_ON;
+//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+//				sensor->payload[5] = 0x55;
+//				osMailPut(qSensorsHandle, sensor);
 				raspOffState++;
 			}
 		} else {

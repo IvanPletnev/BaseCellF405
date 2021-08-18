@@ -408,19 +408,23 @@ void uartCommTask(void const *argument) {
 //					if (chksum != sensors->payload[CV_RX_BUF_SIZE-2]){
 //
 //					}
-					if (!engineSwitchFlag) {
+					/*if (!engineSwitchFlag) {*/
 						if (sensors->payload[19]) {//если двигатель запущен
 							engineSwitchFlag = 1;
 							engineState = ENGINE_STARTED;
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
-					} else {
+					/*}*/ else /*{*/
 						if (!sensors->payload[19]){//если двигатель заглушен
 							engineSwitchFlag = 0;
 							engineState = ENGINE_STOPPED;
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 //							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 						}
-					}
+					/*}*/
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;
 				}
