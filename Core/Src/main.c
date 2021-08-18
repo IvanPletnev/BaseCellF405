@@ -821,7 +821,7 @@ void allConsumersDisable(void) {
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, RESET);
-	HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
+//	HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
 }
 
 

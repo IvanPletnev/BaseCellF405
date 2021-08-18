@@ -436,6 +436,10 @@ void uartCommTask(void const *argument) {
 						} else if (voltage < ENGINE_STOP_LEVEL) {
 							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+//							if (timeOutFlag) {
+//								timeOutFlag = 0;
+//								HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
+//							}
 						}
 
 					/*}*/
