@@ -7,6 +7,9 @@
 
 #include "usart.h"
 
+#define ENGINE_START_LEVEL   	1300
+#define ENGINE_STOP_LEVEL		1280
+
 extern osMailQId qSensorsHandle;
 extern osThreadId defaultTaskHandle;
 extern DMA_HandleTypeDef hdma_usart6_rx;
@@ -341,6 +344,7 @@ void uartCommTask(void const *argument) {
 	sensorsData *sensors;
 	osEvent event, evt;
 	uint8_t destTempBuf[6] = {0};
+	uint16_t voltage = 0;
 
 	osDelay(200);
 
@@ -420,10 +424,20 @@ void uartCommTask(void const *argument) {
 						if (!sensors->payload[19]){//если двигатель заглушен
 							engineSwitchFlag = 0;
 							engineState = ENGINE_STOPPED;
-							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 //							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 						}
+
+						voltage = (uint16_t)sensors->payload[37] << 8;
+						voltage |= sensors->payload[38];
+
+						if (voltage > ENGINE_START_LEVEL) {
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+						} else if (voltage < ENGINE_STOP_LEVEL) {
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+						}
+
 					/*}*/
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;

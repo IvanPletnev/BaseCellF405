@@ -108,6 +108,7 @@ uint16_t raspOffCounter = 0;
 uint16_t raspOnCounter = 0;
 uint8_t raspOnFlag = 0;
 uint8_t raspOffState = 0;
+uint8_t timeOutFlag = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
@@ -813,10 +814,10 @@ void allConsumersEnable(void) {
 
 void allConsumersDisable(void) {
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
-	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+//	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, RESET);
-	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+//	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, RESET);
@@ -1183,6 +1184,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[5] = 0x55;
 				osMailPut(qSensorsHandle, sensor);
 				raspOffState = 0;
+				timeOutFlag = 1;
 			}
 		} else {
 			raspOffTimeoutCounter = 0;
