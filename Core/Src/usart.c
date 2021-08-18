@@ -68,12 +68,9 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
 				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
-					engineState = ENGINE_STOPPED;
-					engineSwitchFlag = 0;
 					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
-//				osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 				HAL_TIM_Base_Stop_IT(&htim13);
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 				__HAL_TIM_SET_COUNTER(&htim13, 0);
@@ -252,8 +249,6 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[3] = CMD_PWR_OFF;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			engineState = ENGINE_STOPPED;
-			engineSwitchFlag = 0;
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -344,7 +339,6 @@ void uartCommTask(void const *argument) {
 	sensorsData *sensors;
 	osEvent event, evt;
 	uint8_t destTempBuf[6] = {0};
-	uint16_t voltage = 0;
 
 	osDelay(200);
 
@@ -412,37 +406,21 @@ void uartCommTask(void const *argument) {
 //					if (chksum != sensors->payload[CV_RX_BUF_SIZE-2]){
 //
 //					}
-					/*if (!engineSwitchFlag) {*/
 						if (sensors->payload[19]) {//если двигатель запущен
-							engineSwitchFlag = 1;
 							engineState = ENGINE_STARTED;
 							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
 							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
-						}
-					/*}*/ else /*{*/
-						if (!sensors->payload[19]){//если двигатель заглушен
-							engineSwitchFlag = 0;
+
+						} else if (!sensors->payload[19]){//если двигатель заглушен
 							engineState = ENGINE_STOPPED;
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+//							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
 //							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 						}
 
-						voltage = (uint16_t)sensors->payload[37] << 8;
-						voltage |= sensors->payload[38];
-
-						if (voltage > ENGINE_START_LEVEL) {
-							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-						} else if (voltage < ENGINE_STOP_LEVEL) {
-							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
-//							if (timeOutFlag) {
-//								timeOutFlag = 0;
-//								HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
-//							}
-						}
-
-					/*}*/
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;
 				}
