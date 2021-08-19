@@ -105,6 +105,7 @@ void allConsumersDisable(void);
 #define GPIO3_RASP_GPIO_Port GPIOA
 #define GPIO17_Pin GPIO_PIN_12
 #define GPIO17_GPIO_Port GPIOA
+#define GPIO17_EXTI_IRQn EXTI15_10_IRQn
 #define CS1_Pin GPIO_PIN_15
 #define CS1_GPIO_Port GPIOA
 #define DHT22_3_Pin GPIO_PIN_10
@@ -126,6 +127,7 @@ void allConsumersDisable(void);
 #define ENGINE_STOP_ID		0x0002
 #define RASP_17_INT_ID		0x0003
 #define RASP_TIMEOUT_ID		0x0004
+#define WATCHDOG_ID			0x0005
 
 #define MAIL_SIZE			16
 #define APDS_TASK_SOURCE	0
