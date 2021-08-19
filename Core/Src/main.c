@@ -1180,7 +1180,7 @@ void watchDogTask(void const * argument)
 	  if (event.status == osEventMessage){
 		  if (event.value.v == WATCHDOG_ID){
 			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-			  osDelay(200);
+			  osDelay(300);
 			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 			  pulseState = 0;
 		  }
