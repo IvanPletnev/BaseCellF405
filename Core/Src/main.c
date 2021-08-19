@@ -989,7 +989,7 @@ void StartDefaultTask(void const * argument)
 
 				if (event1.value.v == ENGINE_STOP_ID){
 					allConsumersDisable();
-					osDelay(10000);
+					osDelay(20000);
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 					powerState = DISABLED;
 				}
