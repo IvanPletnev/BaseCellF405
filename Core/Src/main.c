@@ -107,7 +107,7 @@ uint8_t gerconState = 0;
 uint32_t osTickCounter = 0;
 uint32_t osTickCounterOld = 0;
 uint32_t raspOffTimeoutCounter = 0;
-uint16_t raspOffCounter = 0;
+uint32_t raspOffCounter = 0;
 uint16_t raspOnCounter = 0;
 uint8_t raspOnFlag = 0;
 uint8_t raspOffState = 0;
@@ -997,22 +997,6 @@ void StartDefaultTask(void const * argument)
 					powerState = DISABLED;
 				}
 				break;
-
-//			case RASPBERRY_WAIT:
-//
-//				if (counter < 5){
-//					if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
-//						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-//						powerState = DISABLED;
-//						break;
-//					}
-//					osDelay(200);
-//					counter++;
-//				} else {
-//					counter=0;
-//					powerState = DISABLED;
-//				}
-//				break;
 			}
 		}
 	}
@@ -1179,15 +1163,17 @@ void watchDogTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-	  event = osMessageGet(watchDogQHandle, osWaitForever);
-	  if (event.status == osEventMessage){
-		  if (event.value.v == WATCHDOG_ID){
-			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-			  osDelay(300);
-			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-			  pulseState = 0;
-		  }
-	  }
+
+//	  event = osMessageGet(watchDogQHandle, osWaitForever);
+//	  if (event.status == osEventMessage){
+//		  if (event.value.v == WATCHDOG_ID){
+//			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+//			  osDelay(300);
+//			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+//			  pulseState = 0;
+//		  }
+//	  }
+	  osDelay(1);
 
   }
   /* USER CODE END watchDogTask */
@@ -1236,6 +1222,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 		if (secondCounter >= 1200){
+			secondCounter = 0;
 			if (engineState == ENGINE_STOPPED) {
 				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
@@ -1243,77 +1230,32 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 
 
-//	switch (raspOffState) {
-//	case 0:
-//		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET) {
-//			if (raspOffTimeoutCounter < RASP_OFF_COUNTER) {
-//				raspOffTimeoutCounter++;
-//
-//			} else {
-//				raspOffTimeoutCounter = 0;
-////				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
-////				sensor->source = RASP_UART_SRC;
-////				sensor->size = CV_REQ_SIZE;
-////				sensor->payload[0] = 0xAA;
-////				sensor->payload[1] = RASP_IN_PACK_ID;
-////				sensor->payload[2] = CV_REQ_SIZE;
-////				sensor->payload[3] = CMD_BACKLIGHT_ON;
-////				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-////				sensor->payload[5] = 0x55;
-////				osMailPut(qSensorsHandle, sensor);
-//				raspOffState++;
-//			}
-//		} else {
-//			raspOffTimeoutCounter = 0;
-//		}
-//		break;
-//	case 1:
-//		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET){
-//			if (raspOffTimeoutCounter < RASP_OFF_COUNTER){
-//				raspOffTimeoutCounter++;
-//			} else {
-//				raspOffTimeoutCounter = 0;
-//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_BACKLIGHT_OFF;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
-//				osMailPut(qSensorsHandle, sensor);
-//				raspOffState++;
-//			}
-//		} else {
-//			raspOffTimeoutCounter = 0;
-//		}
-//		break;
-//	case 2:
-//		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET){
-//			if (raspOffTimeoutCounter < (RASP_SHTDN_DELAY - RASP_OFF_COUNTER)){
-//				raspOffTimeoutCounter++;
-//			} else {
-//				raspOffTimeoutCounter = 0;
-//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask имитацию команды CMD_PWR_OFF
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_PWR_OFF;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
-//				osMailPut(qSensorsHandle, sensor);
-//				raspOffState = 0;
-//				timeOutFlag = 1;
-//			}
-//		} else {
-//			raspOffTimeoutCounter = 0;
-//			raspOffState = 0;
-//		}
-//		break;
-//	}
+	switch (raspOffState) {
+	case 0:
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET){
+			if (raspOffCounter < 20){
+				raspOffCounter++;
+			} else {
+				raspOffCounter = 0;
+				raspOffState++;
+			}
+		} else {
+			raspOffCounter = 0;
+		}
+		break;
+	case 1:
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+			if (raspOffCounter < 120000) {
+				raspOffCounter++;
+			} else {
+				raspOffCounter = 0;
+				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+				raspOffState = 0;
+			}
+		} else {
+			raspOffCounter = 0;
+		}
+	}
 
 
 

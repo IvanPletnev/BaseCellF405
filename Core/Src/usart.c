@@ -39,6 +39,9 @@ uint8_t engineState = 0;
 
 uint8_t chksum = 0;
 
+uint16_t onBoardVoltage = 0;
+uint8_t breaksState = 0;
+
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
@@ -371,15 +374,15 @@ void uartCommTask(void const *argument) {
 
 			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
 
-				if (sensors->payload[4] == 1){ //Если сработал таймаут, то есть ответ от SorceSelector не получен,
-					destTempBuf[0] = 0xAA; destTempBuf[1] = CV_REQ_PACK_ID; destTempBuf[2] = CV_REQ_SIZE;
-					destTempBuf[3] = sensors->payload[3]; destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE); destTempBuf[5] = 0x55;
-					setTxMode(6);
-					HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE); //Отправляем повторную команду CMD_PWR_OFF в SourceSelector
-					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
-					__HAL_TIM_SET_COUNTER(&htim13, 0);
-					HAL_TIM_Base_Start_IT(&htim13);
-				}
+//				if (sensors->payload[4] == 1){ //Если сработал таймаут, то есть ответ от SorceSelector не получен,
+//					destTempBuf[0] = 0xAA; destTempBuf[1] = CV_REQ_PACK_ID; destTempBuf[2] = CV_REQ_SIZE;
+//					destTempBuf[3] = sensors->payload[3]; destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE); destTempBuf[5] = 0x55;
+//					setTxMode(6);
+//					HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE); //Отправляем повторную команду CMD_PWR_OFF в SourceSelector
+//					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+//					__HAL_TIM_SET_COUNTER(&htim13, 0);
+//					HAL_TIM_Base_Start_IT(&htim13);
+//				}
 				HAL_UART_Transmit_DMA(&huart1, sensors->payload, sensors->size);//транслируем в Raspberry
 
 			} else{
@@ -406,20 +409,55 @@ void uartCommTask(void const *argument) {
 //					if (chksum != sensors->payload[CV_RX_BUF_SIZE-2]){
 //
 //					}
-						if (sensors->payload[19]) {//если двигатель запущен
-							engineState = ENGINE_STARTED;
-							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 
-						} else if (!sensors->payload[19]){//если двигатель заглушен
-							engineState = ENGINE_STOPPED;
-//							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-//							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
-//							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
-//							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
+					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
+					onBoardVoltage |= (uint16_t)sensors->payload[4];
+
+					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
+						engineState = ENGINE_STARTED;
+						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+
+					} else if (onBoardVoltage < ENGINE_STOP_LEVEL)
+					{
+						engineState = ENGINE_STOPPED;
+					}
+
+					breaksState = sensors->payload[19];
+					if (breaksState) {
+						breaksState = 0;
+						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+						if (engineState == ENGINE_STOPPED){
+							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
+					}
+
+//					switch (breaksState) {
+//					case 0:
+//
+//					}
+
+//					if (sensors->payload[19]) {//если двигатель запущен
+//						engineState = ENGINE_STARTED;
+//						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+//						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+//						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+//						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+//						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+//
+//					} else if (!sensors->payload[19]){//если двигатель заглушен
+//						engineState = ENGINE_STOPPED;
+////							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+////							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+////							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
+////							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
+//					}
 
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;
