@@ -113,12 +113,15 @@ uint8_t raspOnFlag = 0;
 uint8_t raspOffState = 0;
 uint8_t timeOutFlag = 0;
 
+uint32_t secondCounter = 0;
+
 uint8_t pulseState = 0;
 
 uint16_t pulseDuration = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
+extern uint8_t engineState;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1225,6 +1228,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			sensor->size = CV_REQ_SIZE;
 			memcpy(sensor->payload, request, CV_REQ_SIZE);
 			osMailPut(qSensorsHandle, sensor);
+			if (engineState == ENGINE_STOPPED) {
+				secondCounter++;
+			} else {
+				secondCounter = 0;
+			}
+		}
+
+		if (secondCounter >= 1200){
+			if (engineState == ENGINE_STOPPED) {
+				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+			}
 		}
 
 
@@ -1341,13 +1356,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
 		memcpy(sensor1->payload, cvTimeoutResponse, 8);
 
-		osTickCounter = xTaskGetTickCountFromISR() - osTickCounterOld;
 		osMailPut(qSensorsHandle, sensor1);
 	}
 
-	if (htim->Instance == TIM14) {
-		osMessagePut(watchDogQHandle, WATCHDOG_ID, 0);
-	}
+//	if (htim->Instance == TIM14) {
+//		osMessagePut(watchDogQHandle, WATCHDOG_ID, 0);
+//	}
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {

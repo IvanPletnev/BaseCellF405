@@ -415,8 +415,8 @@ void uartCommTask(void const *argument) {
 
 						} else if (!sensors->payload[19]){//если двигатель заглушен
 							engineState = ENGINE_STOPPED;
-							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
+//							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
+//							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 //							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
 //							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 						}
