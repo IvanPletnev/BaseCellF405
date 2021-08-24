@@ -115,7 +115,7 @@ uint8_t timeOutFlag = 0;
 
 uint32_t secondCounter = 0;
 
-uint8_t pulseState = 0;
+//uint8_t pulseState = 0;
 
 uint16_t pulseDuration = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
@@ -169,7 +169,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+    HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -382,7 +382,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 400000;
+  hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -802,11 +802,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : WKUP_Pin */
-  GPIO_InitStruct.Pin = WKUP_Pin;
+  /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
+  GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(WKUP_GPIO_Port, &GPIO_InitStruct);
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPIO__12V_2_Pin TXRX2_Pin CAM_ON_Pin GPIO3_RASP_Pin */
   GPIO_InitStruct.Pin = GPIO__12V_2_Pin|TXRX2_Pin|CAM_ON_Pin|GPIO3_RASP_Pin;
@@ -831,12 +831,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(CS2_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : GPIO17_Pin */
-  GPIO_InitStruct.Pin = GPIO17_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIO17_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pin : CS1_Pin */
   GPIO_InitStruct.Pin = CS1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -853,9 +847,6 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI1_IRQn);
-
-  HAL_NVIC_SetPriority(EXTI15_10_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
 
@@ -932,25 +923,25 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 		osSignalSet(accelHandle, 0x01);
 	}
 
-	switch (pulseState) {
-	case 0:
-		if (GPIO_Pin == GPIO_PIN_12) {
-			__HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
-			__HAL_TIM_SET_COUNTER(&htim14, 0);
-			HAL_TIM_Base_Start_IT(&htim14);
-
-			pulseState++;
-		}
-		break;
-	case 1:
-		if (GPIO_Pin == GPIO_PIN_12) {
-			HAL_TIM_Base_Stop_IT(&htim14);
-			pulseDuration = __HAL_TIM_GET_COUNTER(&htim14);
-			__HAL_TIM_SET_COUNTER(&htim14, 0);
-			HAL_TIM_Base_Start_IT(&htim14);
-		}
-		break;
-	}
+//	switch (pulseState) {
+//	case 0:
+//		if (GPIO_Pin == GPIO_PIN_12) {
+//			__HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
+//			__HAL_TIM_SET_COUNTER(&htim14, 0);
+//			HAL_TIM_Base_Start_IT(&htim14);
+//
+//			pulseState++;
+//		}
+//		break;
+//	case 1:
+//		if (GPIO_Pin == GPIO_PIN_12) {
+//			HAL_TIM_Base_Stop_IT(&htim14);
+//			pulseDuration = __HAL_TIM_GET_COUNTER(&htim14);
+//			__HAL_TIM_SET_COUNTER(&htim14, 0);
+//			HAL_TIM_Base_Start_IT(&htim14);
+//		}
+//		break;
+//	}
 }
 /* USER CODE END 4 */
 
@@ -966,8 +957,8 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
 	osEvent event1;
 	static uint8_t powerState = 0;
-	sensorsData *sensor;
-	uint8_t counter = 0;
+//	sensorsData *sensor;
+//	uint8_t counter = 0;
 
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
 	HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
@@ -1031,7 +1022,7 @@ void accelTask(void const * argument)
 
 	osEvent evt;
 	uint8_t buffer[6];
-	sensorsData *sensors = {0};
+//	sensorsData *sensors = {0};
 //	osDelay(1000);
 	HAL_I2C_Init(&hi2c2);
 	ADXL345_Init();
@@ -1131,7 +1122,7 @@ __weak void uartCommTask(void const * argument)
 void TempHumTask(void const * argument)
 {
   /* USER CODE BEGIN TempHumTask */
-	sensorsData *sensors = {0};
+//	sensorsData *sensors = {0};
 
 	osDelay(200);
 	/* Infinite loop */
@@ -1159,7 +1150,7 @@ void TempHumTask(void const * argument)
 void watchDogTask(void const * argument)
 {
   /* USER CODE BEGIN watchDogTask */
-	osEvent event;
+//	osEvent event;
   /* Infinite loop */
   for(;;)
   {
@@ -1195,6 +1186,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			CMD_CV_REQUEST, 0, PACKET_FOOTER };
 	request[4] = get_check_sum(request, 6);
 
+
+
 	if (htim->Instance == TIM11) {
 
 		if (tickCounter < 2000) {
@@ -1203,6 +1196,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			tickCounter = 0;
 			osSignalSet(uartCommHandle, 0x02);
 		}
+
+/*------------------------------------------------------------------------------------------*/
 
 		if (cvRequestCounter < 1000) {
 			cvRequestCounter++;
@@ -1221,6 +1216,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 		}
 
+/*------------------------------------------------------------------------------------------*/
+
 		if (secondCounter >= 1200){
 			secondCounter = 0;
 			if (engineState == ENGINE_STOPPED) {
@@ -1229,6 +1226,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 		}
 
+/*------------------------------------------------------------------------------------------*/
 
 	switch (raspOffState) {
 	case 0:
@@ -1243,7 +1241,21 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			raspOffCounter = 0;
 		}
 		break;
+
 	case 1:
+		sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
+		sensor->source = RASP_UART_SRC;
+		sensor->size = CV_REQ_SIZE;
+		sensor->payload[0] = 0xAA;
+		sensor->payload[1] = RASP_IN_PACK_ID;
+		sensor->payload[2] = CV_REQ_SIZE;
+		sensor->payload[3] = CMD_BACKLIGHT_OFF;
+		sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+		sensor->payload[5] = 0x55;
+		osMailPut(qSensorsHandle, sensor);
+		raspOffState++;
+
+	case 2:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
 			if (raspOffCounter < 120000) {
 				raspOffCounter++;
@@ -1255,8 +1267,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			raspOffCounter = 0;
 		}
+		break;
 	}
-
 
 
 //	  switch (gerconState){

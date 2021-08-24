@@ -341,7 +341,7 @@ void uartCommTask(void const *argument) {
 	/* USER CODE BEGIN uartCommTask */
 	sensorsData *sensors;
 	osEvent event, evt;
-	uint8_t destTempBuf[6] = {0};
+//	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
 
@@ -405,11 +405,8 @@ void uartCommTask(void const *argument) {
 					break;
 
 				case CV_USART_SRC: //в порт пришел пакет от ячейки управления питанием
-					chksum = get_check_sum(sensors->payload, CV_RX_BUF_SIZE);
-//					if (chksum != sensors->payload[CV_RX_BUF_SIZE-2]){
-//
-//					}
 
+					chksum = get_check_sum(sensors->payload, CV_RX_BUF_SIZE);
 					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 					onBoardVoltage |= (uint16_t)sensors->payload[4];
 
@@ -437,27 +434,6 @@ void uartCommTask(void const *argument) {
 							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
 					}
-
-//					switch (breaksState) {
-//					case 0:
-//
-//					}
-
-//					if (sensors->payload[19]) {//если двигатель запущен
-//						engineState = ENGINE_STARTED;
-//						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-//						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-//						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-//						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-//						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
-//
-//					} else if (!sensors->payload[19]){//если двигатель заглушен
-//						engineState = ENGINE_STOPPED;
-////							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-////							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
-////							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
-////							osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
-//					}
 
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;

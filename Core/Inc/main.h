@@ -105,7 +105,6 @@ void allConsumersDisable(void);
 #define GPIO3_RASP_GPIO_Port GPIOA
 #define GPIO17_Pin GPIO_PIN_12
 #define GPIO17_GPIO_Port GPIOA
-#define GPIO17_EXTI_IRQn EXTI15_10_IRQn
 #define CS1_Pin GPIO_PIN_15
 #define CS1_GPIO_Port GPIOA
 #define DHT22_3_Pin GPIO_PIN_10
