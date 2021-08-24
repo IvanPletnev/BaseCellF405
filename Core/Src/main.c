@@ -1229,6 +1229,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 /*------------------------------------------------------------------------------------------*/
 
 	switch (raspOffState) {
+
 	case 0:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET){
 			if (raspOffCounter < 20){
@@ -1243,21 +1244,31 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 1:
-		sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
-		sensor->source = RASP_UART_SRC;
-		sensor->size = CV_REQ_SIZE;
-		sensor->payload[0] = 0xAA;
-		sensor->payload[1] = RASP_IN_PACK_ID;
-		sensor->payload[2] = CV_REQ_SIZE;
-		sensor->payload[3] = CMD_BACKLIGHT_OFF;
-		sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-		sensor->payload[5] = 0x55;
-		osMailPut(qSensorsHandle, sensor);
-		raspOffState++;
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+
+			if (raspOffCounter < 200) {
+				raspOffCounter++;
+			} else {
+				raspOffCounter = 0;
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_BACKLIGHT_OFF;
+				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				osMailPut(qSensorsHandle, sensor);
+				raspOffState++;
+			}
+		} else {
+			raspOffCounter = 0;
+		}
 
 	case 2:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
-			if (raspOffCounter < 120000) {
+			if (raspOffCounter < 119800) {
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
