@@ -52,7 +52,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
-uint8_t misFirmwareVersion0 = 5;
+uint8_t misFirmwareVersion0 = 6;
 uint8_t misFirmwareVersion1 = 1;
 
 
@@ -429,6 +429,8 @@ void uartCommTask(void const *argument) {
 					discreteInputState = sensors->payload[20];
 					cvStatusByte = sensors->payload[21];
 					cvStatusByte1 = sensors->payload[22];
+					cvFirmwareVersion0 = sensors->payload[23];
+					cvFirmwareVersion1 = sensors->payload[24];
 
 
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
