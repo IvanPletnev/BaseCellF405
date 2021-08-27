@@ -122,6 +122,8 @@ const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
 extern uint8_t engineState;
+extern uint8_t misStatusByte0;
+extern uint8_t misStatusByte1;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -169,7 +171,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-    HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -706,7 +708,7 @@ static void MX_USART6_UART_Init(void)
 
   /* USER CODE END USART6_Init 1 */
   huart6.Instance = USART6;
-  huart6.Init.BaudRate = 19200;
+  huart6.Init.BaudRate = 115200;
   huart6.Init.WordLength = UART_WORDLENGTH_8B;
   huart6.Init.StopBits = UART_STOPBITS_1;
   huart6.Init.Parity = UART_PARITY_NONE;
@@ -851,6 +853,60 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void setStatusBytes (void) {
+
+	if (HAL_GPIO_ReadPin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x01;
+	} else {
+		misStatusByte0 &= ~0x01;
+	}
+	if (HAL_GPIO_ReadPin(ALT_KEY_GPIO_Port, ALT_KEY_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x02;
+	} else {
+		misStatusByte0 &= ~0x02;
+	}
+	if (HAL_GPIO_ReadPin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x04;
+	} else {
+		misStatusByte0 &= ~0x04;
+	}
+	if (HAL_GPIO_ReadPin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x08;
+	} else {
+		misStatusByte0 &= ~0x08;
+	}
+	if (HAL_GPIO_ReadPin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x10;
+	} else {
+		misStatusByte0 &= ~0x10;
+	}
+	if (HAL_GPIO_ReadPin(FAN_GPIO_Port, FAN_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x20;
+	} else {
+		misStatusByte0 &= ~0x20;
+	}
+	if (HAL_GPIO_ReadPin(FAN_2_GPIO_Port, FAN_2_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x40;
+	} else {
+		misStatusByte0 &= ~0x40;
+	}
+	if (HAL_GPIO_ReadPin(FAN_2_GPIO_Port, FAN_2_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x40;
+	} else {
+		misStatusByte0 &= ~0x40;
+	}
+	if (HAL_GPIO_ReadPin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin) == GPIO_PIN_SET){
+		misStatusByte0 |= 0x80;
+	} else {
+		misStatusByte0 &= ~0x80;
+	}
+	if (HAL_GPIO_ReadPin(CAM_ON_GPIO_Port, CAM_ON_Pin) == GPIO_PIN_SET){
+		misStatusByte1 |= 0x01;
+	} else {
+		misStatusByte1 &= ~0x01;
+	}
+}
+
 void allConsumersEnable(void) {
 
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);

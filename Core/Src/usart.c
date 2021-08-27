@@ -41,6 +41,19 @@ uint8_t chksum = 0;
 
 uint16_t onBoardVoltage = 0;
 uint8_t breaksState = 0;
+uint8_t discreteInputState = 0;
+
+uint8_t cvStatusByte = 0;
+uint8_t cvStatusByte1 = 0;
+
+uint8_t misStatusByte0 = 0;
+uint8_t misStatusByte1 = 0;
+
+uint8_t cvFirmwareVersion0 = 0;
+uint8_t cvFirmwareVersion1 = 0;
+
+uint8_t misFirmwareVersion0 = 5;
+uint8_t misFirmwareVersion1 = 1;
 
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
@@ -64,10 +77,12 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			}
 		case 1:
 			switch (currentVoltageRxBuf[1]) {
+
 			case CV_PACK_ID:
 				sensors->source = CV_USART_SRC;
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 				break;
+
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
 				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
@@ -78,6 +93,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 				__HAL_TIM_SET_COUNTER(&htim13, 0);
 				break;
+
 			default:
 				break;
 			}
@@ -338,7 +354,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 }
 
 void uartCommTask(void const *argument) {
-	/* USER CODE BEGIN uartCommTask */
+
 	sensorsData *sensors;
 	osEvent event, evt;
 //	uint8_t destTempBuf[6] = {0};
@@ -410,6 +426,11 @@ void uartCommTask(void const *argument) {
 					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 					onBoardVoltage |= (uint16_t)sensors->payload[4];
 
+					discreteInputState = sensors->payload[20];
+					cvStatusByte = sensors->payload[21];
+					cvStatusByte1 = sensors->payload[22];
+
+
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 						engineState = ENGINE_STARTED;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
@@ -434,19 +455,31 @@ void uartCommTask(void const *argument) {
 							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
 					}
-
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;
 				}
 			}
+			setStatusBytes();
+
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
 			raspTxBuf[GERCON_OFFSET] = gerconState;
 			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
+			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
+			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
+			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
+			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
+			raspTxBuf[DISCR_INPUT_OFFSET] = breaksState;
+			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
+			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
+			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
+			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
 			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 			osMailFree(qSensorsHandle, sensors); //освобождаем память под очередью
 		}
+
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 		if (evt.status == osEventSignal) {
 
