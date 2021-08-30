@@ -34,13 +34,14 @@ uint8_t engineSwitchFlag = 0;
 usartErrT usartError = 0;
 
 uint8_t autoBacklightflags[4] = { 1,1,1,1 };
-uint8_t brightnessValues[4] = { 10,10,10,10 };
+uint8_t brightnessValues[4] = { 2,2,2,2 };
 uint8_t engineState = 0;
 
 uint8_t chksum = 0;
 
 uint16_t onBoardVoltage = 0;
 uint8_t breaksState = 0;
+uint8_t breaksStateTelem = 0;
 uint8_t discreteInputState = 0;
 
 uint8_t cvStatusByte = 0;
@@ -53,12 +54,15 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 1;
+uint8_t misFirmwareVersion1 = 2;
+
+extern uint8_t raspOffState;
+
+
 
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
-//	static uint8_t flag;
 	sensorsData *sensors;
 	uint8_t state = 0;
 
@@ -436,6 +440,11 @@ void uartCommTask(void const *argument) {
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 						engineState = ENGINE_STARTED;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+						if (raspOffState == 2) {
+							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+							osDelay(50);
+							raspOffState = 0;
+						}
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
@@ -446,10 +455,16 @@ void uartCommTask(void const *argument) {
 						engineState = ENGINE_STOPPED;
 					}
 
-					breaksState = sensors->payload[19];
+					breaksStateTelem = breaksState = sensors->payload[19];
+
 					if (breaksState) {
 						breaksState = 0;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+						if (raspOffState == 2) {
+							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+							osDelay(50);
+							raspOffState = 0;
+						}
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
@@ -471,7 +486,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
 			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksState;
+			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
 			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
 			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
@@ -488,7 +503,6 @@ void uartCommTask(void const *argument) {
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 		}
 	}
-	/* USER CODE END uartCommTask */
 }
 
 uint8_t get_check_sum(uint8_t *source, uint8_t size) {

@@ -110,6 +110,7 @@ uint32_t raspOffTimeoutCounter = 0;
 uint32_t raspOffCounter = 0;
 uint16_t raspOnCounter = 0;
 uint8_t raspOnFlag = 0;
+uint16_t stateChangeCounter = 0;
 uint8_t raspOffState = 0;
 uint8_t timeOutFlag = 0;
 
@@ -171,7 +172,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+	HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -1324,15 +1326,33 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	case 2:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+			stateChangeCounter = 0;
 			if (raspOffCounter < 119800) {
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_PWR_OFF;
+				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				allConsumersDisable();
+				osMailPut(qSensorsHandle, sensor);
 				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 				raspOffState = 0;
 			}
 		} else {
 			raspOffCounter = 0;
+			if (stateChangeCounter < 300) {
+				stateChangeCounter++;
+			} else {
+				stateChangeCounter = 0;
+				raspOffState = 0;
+			}
 		}
 		break;
 	}
