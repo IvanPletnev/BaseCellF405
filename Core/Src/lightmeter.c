@@ -12,11 +12,13 @@
 
 uint16_t lightLevel = 0;
 uint16_t lightLevel1 = 0;
+
+uint32_t lightSum = 0;
 extern osMailQId qSensorsHandle;
 
 const lightData lightTable[TAB_ENTRY_COUNT] = {
 		{0, 2},
-		{6554, 2},
+		{6554, 5},
 		{13107, 5},
 		{19662, 10},
 		{26216, 20},
@@ -53,12 +55,12 @@ uint8_t isAutoBrightnessEnable (void){
 void setAutoBrightnessPacket (sensorsData *arg){
 
 	uint8_t i = 0;
-	uint8_t autoBrValue = 0, autoBrValue1 = 0;
-	autoBrValue = getAutoBrightness(lightLevel);
-	autoBrValue1 = getAutoBrightness(lightLevel1);
-	autoBrValue = (autoBrValue+autoBrValue1) / 2;
-	autoBrValue = (autoBrValue + (DISCRETE / 2)) / DISCRETE;
-	autoBrValue *= DISCRETE;
+	uint8_t autoBrValue = 0;
+
+	autoBrValue = getAutoBrightness((uint16_t)lightSum);
+
+//	autoBrValue = (autoBrValue + (DISCRETE / 2)) / DISCRETE;
+//	autoBrValue *= DISCRETE;
 
 	arg->payload[0] = PACKET_HEADER;
 	arg->payload[1] = BL_OUT_PACK_ID;
@@ -110,6 +112,8 @@ void lightMeterTask(void const * argument) {
 		lightLevel |= light0[1];
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
+		lightSum = (lightLevel + lightLevel1) / 2;
+
 
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = APDS_TASK_SOURCE;
