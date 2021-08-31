@@ -54,7 +54,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 2;
+uint8_t misFirmwareVersion1 = 4;
 
 extern uint8_t raspOffState;
 
@@ -196,9 +196,21 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_STOP_IMG:
 
-			memcpy(destTempBuf + 3, source + 3, 2);
+			destTempBuf[2] = 12;
+			destTempBuf[3] = 0x0F;
+			destTempBuf[4] = BL_MODE_MAN;
+			destTempBuf[5] = dimmingTime;
+			destTempBuf[10] = get_check_sum(destTempBuf, 12);
+			destTempBuf[11] = 0x55;
+
+			for (i = 0; i < 4; i++) {
+				autoBacklightflags[i] = BL_MODE_MAN;
+				brightnessValues[i] = 0;
+				destTempBuf[i+6] = 0;
+			}
+
 			setTxMode(2);
-			HAL_UART_Transmit_DMA(&huart2, destTempBuf, size);
+			HAL_UART_Transmit_DMA(&huart2, destTempBuf, 12);
 			sendRespToRasp(CMD_STOP_IMG, RESPONSE_OK);
 			state = 0;
 			break;

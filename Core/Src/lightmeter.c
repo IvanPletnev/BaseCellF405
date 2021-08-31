@@ -7,7 +7,7 @@
 
 #include "lightmeter.h"
 
-#define TAB_ENTRY_COUNT	11
+#define TAB_ENTRY_COUNT	12
 #define DISCRETE		10
 
 uint16_t lightLevel = 0;
@@ -18,14 +18,15 @@ extern osMailQId qSensorsHandle;
 
 const lightData lightTable[TAB_ENTRY_COUNT] = {
 		{0, 2},
-		{6554, 5},
-		{13107, 5},
-		{19662, 10},
-		{26216, 20},
-		{32768, 30},
-		{39322, 40},
-		{45875, 50},
-		{52428, 60},
+		{100, 5},
+		{2000, 10},
+		{10000, 15},
+		{19662, 20},
+		{26216, 30},
+		{32768, 40},
+		{39322, 50},
+		{45875, 60},
+		{52428, 70},
 		{58982, 70},
 		{65535, 70}
 };
