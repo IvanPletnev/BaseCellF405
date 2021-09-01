@@ -54,7 +54,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 4;
+uint8_t misFirmwareVersion1 = 5;
 
 extern uint8_t raspOffState;
 
@@ -199,7 +199,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = 12;
 			destTempBuf[3] = 0x0F;
 			destTempBuf[4] = BL_MODE_MAN;
-			destTempBuf[5] = dimmingTime;
+			destTempBuf[5] = source[4];
 			destTempBuf[10] = get_check_sum(destTempBuf, 12);
 			destTempBuf[11] = 0x55;
 
