@@ -18,7 +18,7 @@ extern osMailQId qSensorsHandle;
 
 const lightData lightTable[TAB_ENTRY_COUNT] = {
 		{0, 2},
-		{100, 5},
+		{100, 6},
 		{2000, 10},
 		{10000, 15},
 		{19662, 20},
