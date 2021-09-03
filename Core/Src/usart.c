@@ -60,7 +60,6 @@ extern uint8_t raspOffState;
 
 
 
-
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 	sensorsData *sensors;
@@ -172,46 +171,47 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	case 2:
 
 		switch (source[3]) {
+
 		case CMD_START_IMG:
 			for (i = 0; i < 4; i++) {
 				if (source[i + 6]) {
 					if (source[4]) {
-						autoBacklightflags[i] = source[4];
+						autoBacklightflags[i] = source[4]; //Если в команде включен авторежим, сохраняем флаги для тех драйверов, y которых значения яркости ненулевые
 					} else {
-						autoBacklightflags[i] = BL_MODE_MAN;
+						autoBacklightflags[i] = BL_MODE_MAN; //Иначе ставим autoBackLightFlag в ноль
 					}
 				} else {
-					autoBacklightflags[i] = BL_MODE_MAN;
+					autoBacklightflags[i] = BL_MODE_MAN; // Если значения яркости нулевые, обнуляем autoBacklightFlag
 				}
-				brightnessValues[i] = source[i + 6];
+				brightnessValues[i] = source[i + 6]; //и сохраняем последнюю яркость для каждого драйвера
 			}
-			dimmingTime = source[5];
-			memcpy(destTempBuf + 3, source + 3, 7);
-			destTempBuf[10] = get_check_sum(destTempBuf, size);
-			setTxMode(2);
-			HAL_UART_Transmit_DMA(&huart2, destTempBuf, size);
+			dimmingTime = source[5]; //запоминаем время диммирования
+			memcpy(destTempBuf + 3, source + 3, 7); //копируем все это в отправляемый буфер
+			destTempBuf[10] = get_check_sum(destTempBuf, size);//считаем CRC
+			setTxMode(2); //в передачу
+			HAL_UART_Transmit_DMA(&huart2, destTempBuf, size); //отправляем в драйвер
 			sendRespToRasp(CMD_START_IMG, RESPONSE_OK);
 			state = 0;
 			break;
 
-		case CMD_STOP_IMG:
+		case CMD_STOP_IMG: //Здесь мы подменяем команду CMD_STOP_IMG командой CMD_START_IMG с нулями
 
 			destTempBuf[2] = 12;
 			destTempBuf[3] = 0x0F;
 			destTempBuf[4] = BL_MODE_MAN;
-			destTempBuf[5] = source[4];
+			destTempBuf[5] = source[4]; //берем значение dimmingTime из команды
 			destTempBuf[10] = get_check_sum(destTempBuf, 12);
 			destTempBuf[11] = 0x55;
 
 			for (i = 0; i < 4; i++) {
-				autoBacklightflags[i] = BL_MODE_MAN;
-				brightnessValues[i] = 0;
-				destTempBuf[i+6] = 0;
+				autoBacklightflags[i] = BL_MODE_MAN; //выключение авторежима для всех драйверов
+				brightnessValues[i] = 0; //Нулевое значение яркости для всех драйверов
+				destTempBuf[i+6] = 0; // Заполняем нулями значения яркости пакета, отправляемого в драйвер
 			}
 
-			setTxMode(2);
+			setTxMode(2); // В передачу
 			HAL_UART_Transmit_DMA(&huart2, destTempBuf, 12);
-			sendRespToRasp(CMD_STOP_IMG, RESPONSE_OK);
+			sendRespToRasp(CMD_STOP_IMG, RESPONSE_OK); //Отправляем в Raspberry ответ, что всё хорошо
 			state = 0;
 			break;
 

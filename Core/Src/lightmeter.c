@@ -42,6 +42,7 @@ uint8_t getAutoBrightness (uint16_t apds){
 }
 
 uint8_t isAutoBrightnessEnable (void){
+
 	uint8_t i = 0;
 	uint8_t value = 0;
 
@@ -114,7 +115,6 @@ void lightMeterTask(void const * argument) {
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
 		lightSum = (lightLevel + lightLevel1) / 2;
-
 
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = APDS_TASK_SOURCE;

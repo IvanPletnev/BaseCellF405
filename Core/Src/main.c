@@ -1029,6 +1029,7 @@ void StartDefaultTask(void const * argument)
 		event1 = osMessageGet(onOffQueueHandle, osWaitForever);
 		if (event1.status == osEventMessage){
 			switch (powerState) {
+
 			case DISABLED:
 
 				if (event1.value.v == ENGINE_START_ID){
@@ -1356,7 +1357,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 		break;
 	}
-
 
 //	  switch (gerconState){
 //	  case 0:
