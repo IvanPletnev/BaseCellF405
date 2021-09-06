@@ -59,7 +59,7 @@ uint8_t misFirmwareVersion0 = 6;
 uint8_t misFirmwareVersion1 = 6;
 
 extern uint8_t raspOffState;
-
+extern osMailQId qEepromHandle;
 
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
@@ -149,6 +149,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	uint8_t destTempBuf[16] = {0};
 	uint8_t state = 0;
 	uint8_t i;
+	lightData **table;
 
 	switch (state) {
 
@@ -352,6 +353,16 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 			sendRespToRasp(CMD_ZERO_OFF, RESPONSE_OK);
+			break;
+
+		case CMD_LIGHT_TABLE:
+//			table = osMailAlloc(qEepromHandle, 10);
+//			for (i = 0; i < TAB_ENTRY_COUNT; i++) {
+//				table[i]->apdsValue = (uint16_t)source[i*3 + 4] << 8;
+//				table[i]->apdsValue |= (uint16_t) source[i*3 + 5];
+//				table[i]->brightness = source[i*3 + 6];
+//			}
+//			osMailPut(qEepromHandle, table);
 			break;
 
 		case CMD_SET_DIMMING_TIME:

@@ -40,7 +40,7 @@ extern "C" {
 typedef struct _sensorsData {
 	uint8_t source;
 	uint8_t size;
-	uint8_t payload[32];
+	uint8_t payload[64];
 }sensorsData;
 
 typedef enum _powerStateType {
@@ -182,7 +182,7 @@ void setStatusBytes (void);
 #define STD_PACK_SIZE		APDS_SIZE+TLA2024_SIZE+DHT22_SIZE+CV_SIZE+GERCON_SIZE+ENGINE_STATE_SIZE+CV_STATUS_SIZE+MIS_STATUS_SIZE+DISCRETE_IN_SIZE+CV_FIRMWARE_SIZE+MIS_FIRMWARE_SIZE+RESERVE_SIZE+PACK_HEADER_SIZE+PACK_FOOTER_SIZE //70
 #define ADXL_PACK_SIZE		ADXL_SIZE+PACK_HEADER_SIZE+PACK_FOOTER_SIZE //10
 #define CV_RX_BUF_SIZE		30
-#define RASP_RX_BUF_SIZE	32
+#define RASP_RX_BUF_SIZE	64
 
 /* USER CODE END Private defines */
 

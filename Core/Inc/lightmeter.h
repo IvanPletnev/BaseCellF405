@@ -12,6 +12,8 @@
 #include "apds9960.h"
 #include "usart.h"
 
+#define TAB_ENTRY_COUNT	12
+
 typedef struct _lightdata {
 	uint16_t apdsValue;
 	uint8_t brightness;

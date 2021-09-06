@@ -80,12 +80,13 @@ osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
 osThreadId tempHumMeasHandle;
-osThreadId watchDogHandle;
+osThreadId eepromHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
 /* USER CODE BEGIN PV */
 osMailQId qSensorsHandle;
+osMailQId qEepromHandle;
 uint16_t tickCounter = 0;
 uint8_t currentVoltageRxBuf [CV_RX_BUF_SIZE];
 uint8_t raspRxBuf [RASP_RX_BUF_SIZE];
@@ -147,7 +148,7 @@ void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
 void TempHumTask(void const * argument);
-void watchDogTask(void const * argument);
+void eepromTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -241,6 +242,9 @@ int main(void)
   /* add queues, ... */
 	osMailQDef(Qsensors, MAIL_SIZE, sensorsData);
 	qSensorsHandle = osMailCreate(osMailQ(Qsensors), NULL);
+	osMailQDef(Qeeprom, 2, lightData[TAB_ENTRY_COUNT]);
+	qEepromHandle = osMailCreate(osMailQ(Qeeprom), NULL);
+
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
@@ -268,9 +272,9 @@ int main(void)
   osThreadDef(tempHumMeas, TempHumTask, osPriorityNormal, 0, 128);
   tempHumMeasHandle = osThreadCreate(osThread(tempHumMeas), NULL);
 
-  /* definition and creation of watchDog */
-  osThreadDef(watchDog, watchDogTask, osPriorityNormal, 0, 128);
-  watchDogHandle = osThreadCreate(osThread(watchDog), NULL);
+  /* definition and creation of eeprom */
+  osThreadDef(eeprom, eepromTask, osPriorityNormal, 0, 128);
+  eepromHandle = osThreadCreate(osThread(eeprom), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1205,34 +1209,27 @@ void TempHumTask(void const * argument)
   /* USER CODE END TempHumTask */
 }
 
-/* USER CODE BEGIN Header_watchDogTask */
+/* USER CODE BEGIN Header_eepromTask */
 /**
-* @brief Function implementing the watchDog thread.
+* @brief Function implementing the eeprom thread.
 * @param argument: Not used
 * @retval None
 */
-/* USER CODE END Header_watchDogTask */
-void watchDogTask(void const * argument)
-{
-  /* USER CODE BEGIN watchDogTask */
-//	osEvent event;
-  /* Infinite loop */
-  for(;;)
-  {
+/* USER CODE END Header_eepromTask */
+void eepromTask(void const *argument) {
 
-//	  event = osMessageGet(watchDogQHandle, osWaitForever);
-//	  if (event.status == osEventMessage){
-//		  if (event.value.v == WATCHDOG_ID){
-//			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-//			  osDelay(300);
-//			  HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-//			  pulseState = 0;
-//		  }
-//	  }
-	  osDelay(1);
-
-  }
-  /* USER CODE END watchDogTask */
+	/* USER CODE BEGIN eepromTask */
+	lightData *table;
+	osEvent event;
+	/* Infinite loop */
+	for (;;) {
+//		event = osMailGet(qEepromHandle, osWaitForever);
+//		if (event.status == osEventMail){
+//			table = event.value.p;
+//		}
+		osDelay(1);
+	}
+	/* USER CODE END eepromTask */
 }
 
 /**

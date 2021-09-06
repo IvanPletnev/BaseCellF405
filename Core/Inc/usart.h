@@ -12,6 +12,7 @@
 #include "stm32f4xx_hal.h"
 #include "cmsis_os.h"
 #include "string.h"
+#include "lightmeter.h"
 
 typedef enum _usartErrT {
 	ERR_OK,
@@ -45,6 +46,7 @@ typedef enum _usartErrT {
 #define CMD_CHARGER_ON				0x17
 #define CMD_BACKLIGHT_ON			0x18
 #define CMD_ZERO_ON					0x19
+#define CMD_LIGHT_TABLE				0x1A
 
 #define LED_DRIVER_0_ADDR			0x00
 #define LED_DRIVER_1_ADDR			0x01

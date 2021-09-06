@@ -16,19 +16,19 @@ uint16_t lightLevel1 = 0;
 uint32_t lightSum = 0;
 extern osMailQId qSensorsHandle;
 
-const lightData lightTable[TAB_ENTRY_COUNT] = {
-		{0, 2},
-		{100, 6},
-		{2000, 10},
-		{10000, 15},
-		{19662, 20},
-		{26216, 30},
-		{32768, 40},
-		{39322, 50},
-		{45875, 60},
-		{52428, 70},
-		{58982, 70},
-		{65535, 70}
+lightData lightTable[TAB_ENTRY_COUNT] = {
+	{0, 2},
+	{100, 6},
+	{2000, 10},
+	{10000, 15},
+	{19662, 20},
+	{26216, 30},
+	{32768, 40},
+	{39322, 50},
+	{45875, 60},
+	{52428, 70},
+	{58982, 70},
+	{65535, 70}
 };
 
 uint8_t getAutoBrightness (uint16_t apds){
