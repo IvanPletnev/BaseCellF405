@@ -31,6 +31,7 @@
 #include "apds9960.h"
 #include "usart.h"
 #include "utilites.h"
+#include "eeprom.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -116,8 +117,6 @@ uint8_t timeOutFlag = 0;
 
 uint32_t secondCounter = 0;
 
-//uint8_t pulseState = 0;
-
 uint16_t pulseDuration = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
@@ -172,8 +171,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -1129,8 +1127,12 @@ void tempMeasTask(void const * argument)
   /* USER CODE BEGIN tempMeasTask */
 	static uint8_t buffer0[2] = {0};
 	static uint8_t buffer1[2] = {0};
+	static uint8_t buffer2[2] = {0};
+
 	uint16_t temperature0 = 0;
 	uint16_t temperature1 = 0;
+	uint16_t temperature2 = 0;
+
 	sensorsData *sensors = {0};
 
 	osDelay(500);
@@ -1140,10 +1142,13 @@ void tempMeasTask(void const * argument)
 		}
 		TLA2024_Read(0, buffer0);
 		TLA2024_Read(1, buffer1);
+		TLA2024_Read(2, buffer2);
 		temperature0 = (uint16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
 		temperature1 = (uint16_t)buffer1[0] << 8;
 		temperature1 |= buffer1[1];
+		temperature2 = (uint16_t)buffer2[0] << 8;
+		temperature2 |= buffer2[1];
 		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;
@@ -1151,6 +1156,7 @@ void tempMeasTask(void const * argument)
 		memset(sensors->payload, 0, 16);
 		memcpy (sensors->payload, buffer0, 2);
 		memcpy (sensors->payload+2, buffer1, 2);
+		memcpy (sensors->payload+4, buffer2, 2);
 		osMailPut(qSensorsHandle, sensors);
 		osDelay(500);
 	}
@@ -1244,8 +1250,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	uint8_t request[6] = { PACKET_HEADER, CV_REQ_PACK_ID, CV_REQ_SIZE,
 			CMD_CV_REQUEST, 0, PACKET_FOOTER };
 	request[4] = get_check_sum(request, 6);
-
-
 
 	if (htim->Instance == TIM11) {
 

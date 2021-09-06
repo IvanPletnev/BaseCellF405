@@ -9,6 +9,7 @@
 
 #define ENGINE_START_LEVEL   	1300
 #define ENGINE_STOP_LEVEL		1280
+#define ONBOARD_CRITICAL_LEVEL	1230
 
 extern osMailQId qSensorsHandle;
 extern osThreadId defaultTaskHandle;
@@ -36,6 +37,7 @@ usartErrT usartError = 0;
 uint8_t autoBacklightflags[4] = { 1,1,1,1 };
 uint8_t brightnessValues[4] = { 2,2,2,2 };
 uint8_t engineState = 0;
+uint8_t onboardAlarmFlag = 0;
 
 uint8_t chksum = 0;
 
@@ -465,6 +467,9 @@ void uartCommTask(void const *argument) {
 					} else if (onBoardVoltage < ENGINE_STOP_LEVEL)
 					{
 						engineState = ENGINE_STOPPED;
+						if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
+							onboardAlarmFlag = 1;
+						}
 					}
 
 					breaksStateTelem = breaksState = sensors->payload[19];

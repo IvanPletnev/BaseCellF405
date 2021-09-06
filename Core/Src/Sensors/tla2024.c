@@ -11,7 +11,7 @@
 
 #define TLA2024_ADDRESS_1					0x48	//pull down
 #define TLA2024_ADDRESS_2					0x49	//pull up
-#define TLA2024_ADDRESS_3					0x50	//pull scl
+#define TLA2024_ADDRESS_3					0x4B	//pull scl
 #define pulse 								49 		//50ms
 #define TLA2024_CONV_RETRY					10
 
@@ -168,8 +168,8 @@ uint16_t getTemp (uint16_t adc){ //Метод кусочно-линейной а
 void TLA2024_Init() 
 {
 	init_send_buffer(0, TLA2024_AIN0_GND, TLA2024_DR_3300, TLA2024_PGA_4096);
-	init_send_buffer(1, TLA2024_AIN0_AIN1, TLA2024_DR_3300, TLA2024_PGA_4096);
-	init_send_buffer(2, TLA2024_AIN0_AIN1, TLA2024_DR_3300, TLA2024_PGA_4096);
+	init_send_buffer(1, TLA2024_AIN0_GND, TLA2024_DR_3300, TLA2024_PGA_4096);
+	init_send_buffer(2, TLA2024_AIN0_GND, TLA2024_DR_3300, TLA2024_PGA_4096);
 }
 
 uint8_t TLA2024_Read(uint8_t nSensor, uint8_t *dest)
@@ -189,12 +189,6 @@ uint8_t TLA2024_Read(uint8_t nSensor, uint8_t *dest)
 	tmp_val = ((uint16_t) data_buf[0]) << 4;
 	tmp_val += (uint16_t) data_buf[1] >> 4;
 
-//	tempVar = (float)adcCode;
-
-//	printf("Raw ADC code %d \r\n", adcCode);
-//	tempVar = (2047.0 / tempVar) - 1;
-//	tempVar = 75000.0 / tempVar;
-//	printf("Resistance = %.2f\r\n", tempVar);
 	temperature = getTemp(tmp_val);
 
 	dest[0]	= (uint8_t) (temperature >> 8);
