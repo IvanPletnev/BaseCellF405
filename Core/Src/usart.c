@@ -356,13 +356,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_LIGHT_TABLE:
-//			table = osMailAlloc(qEepromHandle, 10);
-//			for (i = 0; i < TAB_ENTRY_COUNT; i++) {
-//				table[i]->apdsValue = (uint16_t)source[i*3 + 4] << 8;
-//				table[i]->apdsValue |= (uint16_t) source[i*3 + 5];
-//				table[i]->brightness = source[i*3 + 6];
-//			}
-//			osMailPut(qEepromHandle, table);
+
 			break;
 
 		case CMD_SET_DIMMING_TIME:

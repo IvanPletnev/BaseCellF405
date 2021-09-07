@@ -86,7 +86,7 @@ osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
 /* USER CODE BEGIN PV */
 osMailQId qSensorsHandle;
-osMailQId qEepromHandle;
+
 uint16_t tickCounter = 0;
 uint8_t currentVoltageRxBuf [CV_RX_BUF_SIZE];
 uint8_t raspRxBuf [RASP_RX_BUF_SIZE];
@@ -172,7 +172,8 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+
+HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -242,8 +243,6 @@ int main(void)
   /* add queues, ... */
 	osMailQDef(Qsensors, MAIL_SIZE, sensorsData);
 	qSensorsHandle = osMailCreate(osMailQ(Qsensors), NULL);
-	osMailQDef(Qeeprom, 2, lightData[TAB_ENTRY_COUNT]);
-	qEepromHandle = osMailCreate(osMailQ(Qeeprom), NULL);
 
   /* USER CODE END RTOS_QUEUES */
 
@@ -1219,14 +1218,10 @@ void TempHumTask(void const * argument)
 void eepromTask(void const *argument) {
 
 	/* USER CODE BEGIN eepromTask */
-	lightData *table;
-	osEvent event;
+
 	/* Infinite loop */
 	for (;;) {
-//		event = osMailGet(qEepromHandle, osWaitForever);
-//		if (event.status == osEventMail){
-//			table = event.value.p;
-//		}
+
 		osDelay(1);
 	}
 	/* USER CODE END eepromTask */
@@ -1263,6 +1258,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			cvRequestCounter++;
 
 		} else {
+//			HAL_GPIO_TogglePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin);
+//			HAL_GPIO_TogglePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin);
+//			HAL_GPIO_TogglePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin);
 			cvRequestCounter = 0;
 			sensor = osMailAlloc(qSensorsHandle, 0);
 			sensor->source = CV_REQ_SOURCE;
@@ -1306,7 +1304,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	case 1:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
 
-			if (raspOffCounter < 200) {
+			if (raspOffCounter < 500) {
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
@@ -1333,7 +1331,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
-				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
+				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
 				sensor->source = RASP_UART_SRC;
 				sensor->size = CV_REQ_SIZE;
 				sensor->payload[0] = 0xAA;
