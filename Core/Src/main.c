@@ -125,6 +125,7 @@ extern uint8_t engineSwitchFlag;
 extern uint8_t engineState;
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
+uint16_t VirtAddVarTab[NB_OF_VAR];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -172,8 +173,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -204,6 +204,9 @@ HAL_Init();
   HAL_GPIO_WritePin(TXRX6_GPIO_Port, TXRX6_Pin, RESET);
 
   HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
+
+//  allConsumersEnable();
+
   HAL_TIM_Base_Start_IT(&htim11);
   HAL_TIM_Base_Stop_IT(&htim14);
   __HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
@@ -211,6 +214,15 @@ HAL_Init();
 	TLA2024_Init();
 	APDS9960_Init();
 	HAL_TIM_Base_Stop_IT(&htim13);
+	HAL_FLASH_Unlock();
+
+//	  if( EE_Init() != EE_OK)
+//	  {
+//	    Error_Handler();
+//	  }
+//
+//	  EE_WriteVariable(0x0000, 0x5555);
+
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -801,12 +813,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : ADXL2_INT_Pin */
-  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
-
   /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -819,6 +825,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ADXL2_INT_Pin */
+  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : FAN_2_Pin FAN_Pin GPIO__12V_3_Pin RASP_KEY_Pin
                            DHT22_1_Pin ALT_KEY_Pin */
@@ -850,8 +862,8 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GERCON_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+  HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
 }
 
@@ -978,7 +990,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 //	if (GPIO_Pin == GPIO_PIN_0) {
 //		osSignalSet(defaultTaskHandle, CV_EXT_INTERRUPT_ID);
 //	}
-	if (GPIO_Pin == GPIO_PIN_1) {
+	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
 	}
 
@@ -1215,16 +1227,16 @@ void TempHumTask(void const * argument)
 * @retval None
 */
 /* USER CODE END Header_eepromTask */
-void eepromTask(void const *argument) {
-
-	/* USER CODE BEGIN eepromTask */
+void eepromTask(void const * argument)
+{
+  /* USER CODE BEGIN eepromTask */
 
 	/* Infinite loop */
 	for (;;) {
 
 		osDelay(1);
 	}
-	/* USER CODE END eepromTask */
+  /* USER CODE END eepromTask */
 }
 
 /**
@@ -1258,9 +1270,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			cvRequestCounter++;
 
 		} else {
-//			HAL_GPIO_TogglePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin);
-//			HAL_GPIO_TogglePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin);
-//			HAL_GPIO_TogglePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin);
 			cvRequestCounter = 0;
 			sensor = osMailAlloc(qSensorsHandle, 0);
 			sensor->source = CV_REQ_SOURCE;
@@ -1357,34 +1366,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 	}
 
-//	  switch (gerconState){
-//	  case 0:
-//		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 50){
-// 				  gerconCounter++;
-//			  } else {
-//				  gerconCounter = 0;
+	  switch (gerconState){
+	  case 0:
+		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+			  if (gerconCounter < 50){
+ 				  gerconCounter++;
+			  } else {
+				  gerconCounter = 0;
 //				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-//				  gerconState++;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//	  case 1:
-//		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 500){
-//				  gerconCounter++;
-//			  } else {
+				  gerconState++;
+			  }
+		  } else {
+			  gerconCounter = 0;
+		  }
+		  break;
+	  case 1:
+		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+			  if (gerconCounter < 500){
+				  gerconCounter++;
+			  } else {
 //				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-//				  gerconCounter = 0;
-//				  gerconState = 0;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//	  }
+				  gerconCounter = 0;
+				  gerconState = 0;
+			  }
+		  } else {
+			  gerconCounter = 0;
+		  }
+		  break;
+	  }
 	}
 
 	if (htim->Instance == TIM13) {

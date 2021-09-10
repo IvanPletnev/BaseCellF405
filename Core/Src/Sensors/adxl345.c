@@ -12,6 +12,7 @@ uint8_t axises = 0;
 void ADXL345_Init(void);
 	
 void ADXL345_Init(void) {
+
     setPowerControl(0x00);
     setDataRate(ADXL345_800HZ);
     //Full resolution, +/-16g, 4mg/LSB.
@@ -279,13 +280,8 @@ uint8_t getFifoStatus(void)
 
 uint8_t oneByteRead(uint8_t address)
 {
-//	uint8_t tx[1] = {(ADXL345_SPI_READ | (address & 0x3F))};
 	uint8_t rx[1] = {0};
 	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, address, 1, rx, 1, 100);
-
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_RESET);
-//	HAL_SPI_TransmitReceive(&hspi2, tx, rx, 1, 100);
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_SET);
 
 	return rx[0];
 }
@@ -297,37 +293,16 @@ void oneByteWrite(uint8_t address, uint8_t data)
 	databuf[1] = data;
 
 	HAL_I2C_Master_Transmit(&hi2c2, ADXL_ADDRESS, databuf, 2, 100);
-//	uint8_t tx[1] = {(ADXL345_SPI_WRITE | (address & 0x3F))};
-//
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_RESET);
-//	HAL_SPI_Transmit(&hspi2, tx, 1, 100);
-//	HAL_SPI_Transmit(&hspi2, &data, 1, 100);
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_SET);
 	
 }
 
 void multiByteRead(uint8_t startAddress, uint8_t* buffer, uint8_t size)
 {
-
-HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 100);
-//	uint8_t tx[1] = {(ADXL345_SPI_READ | ADXL345_MULTI_BYTE | (startAddress & 0x3F))};
-//
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_RESET);
-//	HAL_SPI_TransmitReceive(&hspi2, tx, buffer, size, 100);
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_SET);
-
+	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 100);
 }
 
 void multiByteWrite(uint8_t startAddress, uint8_t* buffer, uint8_t size)
 {
 	HAL_I2C_Mem_Write(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 100);
-//	uint8_t tx[1] = {(ADXL345_SPI_WRITE | ADXL345_MULTI_BYTE | (startAddress & 0x3F))};
-//
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_RESET);
-//	HAL_SPI_Transmit(&hspi2, tx, 1, 100);
-//	HAL_SPI_Transmit(&hspi2, buffer, size, 100);
-//	HAL_GPIO_WritePin(CS1_GPIO_Port,CS1_Pin,GPIO_PIN_SET);
-
-
 }
 

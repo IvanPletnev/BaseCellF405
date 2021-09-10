@@ -56,7 +56,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 6;
+uint8_t misFirmwareVersion1 = 11;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -149,7 +149,6 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	uint8_t destTempBuf[16] = {0};
 	uint8_t state = 0;
 	uint8_t i;
-	lightData **table;
 
 	switch (state) {
 
@@ -282,6 +281,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_PWR_OFF:
+
 			destTempBuf[1] = CV_REQ_PACK_ID;
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_PWR_OFF;
@@ -295,6 +295,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_CHARGER_OFF:
+
 			destTempBuf[1] = CV_REQ_PACK_ID;
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_CHARGER_OFF;
@@ -307,6 +308,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_BACKLIGHT_OFF:
+
 			destTempBuf[1] = CV_REQ_PACK_ID;
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_OFF;
@@ -319,6 +321,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_ZERO_OFF:
+
 			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 			sendRespToRasp(CMD_ZERO_OFF, RESPONSE_OK);
 			break;
@@ -356,7 +359,13 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_LIGHT_TABLE:
-
+//			table = osMailAlloc(qEepromHandle, 10);
+//			for (i = 0; i < TAB_ENTRY_COUNT; i++) {
+//				table[i]->apdsValue = (uint16_t)source[i*3 + 4] << 8;
+//				table[i]->apdsValue |= (uint16_t) source[i*3 + 5];
+//				table[i]->brightness = source[i*3 + 6];
+//			}
+//			osMailPut(qEepromHandle, table);
 			break;
 
 		case CMD_SET_DIMMING_TIME:
