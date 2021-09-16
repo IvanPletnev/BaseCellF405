@@ -1332,7 +1332,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			raspOffCounter = 0;
 		}
-
+		break;
 	case 2:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
 			stateChangeCounter = 0;
@@ -1366,6 +1366,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 	}
 
+/*------------------------------------------------------------------------------------------*/
+	
 	  switch (gerconState){
 	  case 0:
 		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
@@ -1395,6 +1397,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  break;
 	  }
 	}
+	
+/*------------------------------------------------------------------------------------------*/
+
 
 	if (htim->Instance == TIM13) {
 		HAL_TIM_Base_Stop_IT(&htim13);
