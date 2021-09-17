@@ -909,11 +909,6 @@ void setStatusBytes (void) {
 	} else {
 		misStatusByte0 &= ~0x40;
 	}
-	if (HAL_GPIO_ReadPin(FAN_2_GPIO_Port, FAN_2_Pin) == GPIO_PIN_SET){
-		misStatusByte0 |= 0x40;
-	} else {
-		misStatusByte0 &= ~0x40;
-	}
 	if (HAL_GPIO_ReadPin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin) == GPIO_PIN_SET){
 		misStatusByte0 |= 0x80;
 	} else {
