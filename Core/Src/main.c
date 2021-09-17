@@ -46,6 +46,9 @@
 
 #define RASP_OFF_COUNTER		500
 #define RASP_SHTDN_DELAY		45000
+
+#define TEMPERATURE				400
+#define TEMP_HYSTERESE			20
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -931,7 +934,7 @@ void allConsumersEnable(void) {
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
+//	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, SET);
 	HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
@@ -1141,6 +1144,7 @@ void tempMeasTask(void const * argument)
 	uint16_t temperature0 = 0;
 	uint16_t temperature1 = 0;
 	uint16_t temperature2 = 0;
+	static uint8_t fanState = 0;
 
 	sensorsData *sensors = {0};
 
@@ -1158,6 +1162,21 @@ void tempMeasTask(void const * argument)
 		temperature1 |= buffer1[1];
 		temperature2 = (uint16_t)buffer2[0] << 8;
 		temperature2 |= buffer2[1];
+
+		switch (fanState) {
+		case 0:
+			if (temperature0 > TEMPERATURE) {
+				HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
+				fanState++;
+			}
+			break;
+		case 1:
+			if (temperature0 < (TEMPERATURE-TEMP_HYSTERESE)){
+				HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
+				fanState = 0;
+			}
+			break;
+		}
 		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;
