@@ -23,10 +23,10 @@ extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
-extern TIM_HandleTypeDef htim13;
-extern uint32_t osTickCounter;
 extern uint32_t osTickCounterOld;
 
+extern TIM_HandleTypeDef htim13;
+extern uint32_t osTickCounter;
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 uint8_t dimmingTime = 0x32;
@@ -90,9 +90,9 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
-				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
-					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
-				}
+//				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
+//					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
+//				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 				HAL_TIM_Base_Stop_IT(&htim13);
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -288,7 +288,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
-
+			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
@@ -470,8 +470,7 @@ void uartCommTask(void const *argument) {
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 						if ((raspOffState == 2) || (raspOffState == 1)) {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-							osDelay(50);
-							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+							osDelay(100);
 							raspOffState = 0;
 						}
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
@@ -494,16 +493,15 @@ void uartCommTask(void const *argument) {
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 						if ((raspOffState == 2) || (raspOffState == 1)) {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-							osDelay(50);
-							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+							osDelay(100);
 							raspOffState = 0;
 						}
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-						if (engineState == ENGINE_STOPPED){
-							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
-						}
+//						if (engineState == ENGINE_STOPPED){
+						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+//						}
 					}
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;

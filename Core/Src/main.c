@@ -122,6 +122,7 @@ uint16_t pulseDuration = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
+extern uint16_t onBoardVoltage;
 extern uint8_t engineState;
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
@@ -1027,7 +1028,6 @@ void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
 	osEvent event1;
-	static uint8_t powerState = 0;
 //	sensorsData *sensor;
 //	uint8_t counter = 0;
 
@@ -1041,24 +1041,18 @@ void StartDefaultTask(void const * argument)
 
 		event1 = osMessageGet(onOffQueueHandle, osWaitForever);
 		if (event1.status == osEventMessage){
-			switch (powerState) {
+			switch (event1.value.v) {
 
-			case DISABLED:
+			case ENGINE_START_ID:
 
-				if (event1.value.v == ENGINE_START_ID){
-					allConsumersEnable();
-					powerState = ENABLED;
-				}
+				allConsumersEnable();
 				break;
 
-			case ENABLED:
+			case ENGINE_STOP_ID:
 
-				if (event1.value.v == ENGINE_STOP_ID){
-					allConsumersDisable();
-					osDelay(20000);
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-					powerState = DISABLED;
-				}
+				allConsumersDisable();
+				osDelay(20000);
+				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 				break;
 			}
 		}
@@ -1336,7 +1330,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	case 2:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
 			stateChangeCounter = 0;
-			if (raspOffCounter < 119800) {
+			if (raspOffCounter < 119500) {
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
