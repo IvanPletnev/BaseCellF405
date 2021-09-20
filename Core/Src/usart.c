@@ -468,7 +468,7 @@ void uartCommTask(void const *argument) {
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 						engineState = ENGINE_STARTED;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if ((raspOffState == 2) || (raspOffState == 1)) {
+						if (raspOffState == 2) {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 							osDelay(100);
 							raspOffState = 0;
@@ -491,7 +491,7 @@ void uartCommTask(void const *argument) {
 					if (breaksState) {
 						breaksState = 0;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if ((raspOffState == 2) || (raspOffState == 1)) {
+						if (raspOffState == 2)  {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 							osDelay(100);
 							raspOffState = 0;
