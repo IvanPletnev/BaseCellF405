@@ -94,6 +94,7 @@ uint8_t counter_try = 0;
 uint16_t temperature;
 float tempVar;
 
+
 void TLA2024_Init(void);
 void init_send_buffer(uint8_t nSensor, uint8_t mux, uint8_t dr, uint8_t pga);
 uint8_t TLA2024_single_shot_conv_start(uint8_t nSensor);

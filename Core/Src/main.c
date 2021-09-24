@@ -49,6 +49,8 @@
 
 #define TEMPERATURE				400
 #define TEMP_HYSTERESE			20
+#define TEMP_SENS_NORM			1
+#define TEMP_SENSOR_FAIL		0
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -129,7 +131,11 @@ extern uint16_t onBoardVoltage;
 extern uint8_t engineState;
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
+extern uint8_t cvStatusByte;
+
 uint16_t VirtAddVarTab[NB_OF_VAR];
+uint8_t tempSensorState = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -216,7 +222,7 @@ int main(void)
   __HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
 //  	HAL_I2C_DeInit(&hi2c2);
 	TLA2024_Init();
-	APDS9960_Init();
+
 	HAL_TIM_Base_Stop_IT(&htim13);
 	HAL_FLASH_Unlock();
 
@@ -1148,7 +1154,7 @@ void tempMeasTask(void const * argument)
 	for (;;) {
 		if (osMutexWait(I2C2MutexHandle, 50) != osOK){
 		}
-		TLA2024_Read(0, buffer0);
+		tempSensorState = TLA2024_Read(0, buffer0);
 		TLA2024_Read(1, buffer1);
 		TLA2024_Read(2, buffer2);
 		temperature0 = (uint16_t)buffer0[0] << 8;
@@ -1158,20 +1164,27 @@ void tempMeasTask(void const * argument)
 		temperature2 = (uint16_t)buffer2[0] << 8;
 		temperature2 |= buffer2[1];
 
-		switch (fanState) {
-		case 0:
-			if (temperature0 > TEMPERATURE) {
-				HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
-				fanState++;
+		if ((tempSensorState == TEMP_SENSOR_FAIL) && (cvStatusByte & 0x06)) {
+
+			HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
+
+		} else {
+			switch (fanState) {
+			case 0:
+				if (temperature0 > TEMPERATURE) {
+					HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
+					fanState++;
+				}
+				break;
+			case 1:
+				if (temperature0 < (TEMPERATURE-TEMP_HYSTERESE)){
+					HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
+					fanState = 0;
+				}
+				break;
 			}
-			break;
-		case 1:
-			if (temperature0 < (TEMPERATURE-TEMP_HYSTERESE)){
-				HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
-				fanState = 0;
-			}
-			break;
 		}
+
 		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;

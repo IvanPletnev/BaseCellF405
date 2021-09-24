@@ -425,6 +425,7 @@ void uartCommTask(void const *argument) {
 //				if (sensors->payload[4] == 1){ //Если сработал таймаут, то есть ответ от SorceSelector не получен,
 //					destTempBuf[0] = 0xAA; destTempBuf[1] = CV_REQ_PACK_ID; destTempBuf[2] = CV_REQ_SIZE;
 //					destTempBuf[3] = sensors->payload[3]; destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE); destTempBuf[5] = 0x55;
+//					osDelay(50);
 //					setTxMode(6);
 //					HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE); //Отправляем повторную команду CMD_PWR_OFF в SourceSelector
 //					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -464,8 +465,8 @@ void uartCommTask(void const *argument) {
 					cvFirmwareVersion0 = sensors->payload[23];
 					cvFirmwareVersion1 = sensors->payload[24];
 
-
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
+
 						engineState = ENGINE_STARTED;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 						if (raspOffState == 2) {

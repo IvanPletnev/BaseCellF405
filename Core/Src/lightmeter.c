@@ -96,7 +96,9 @@ void lightMeterTask(void const * argument) {
 	static uint8_t blue1[2];
 	sensorsData *sensors = {0};
 	sensorsData *autoBlQueue = {0};
-	osDelay(200);
+	osDelay(500);
+	APDS9960_Init();
+	osDelay(100);
 	/* Infinite loop */
 
 	for (;;) {
