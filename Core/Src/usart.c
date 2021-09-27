@@ -27,6 +27,7 @@ extern uint32_t osTickCounterOld;
 
 extern TIM_HandleTypeDef htim13;
 extern uint32_t osTickCounter;
+extern uint8_t wakeUpFlag;
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 uint8_t dimmingTime = 0x32;
@@ -56,7 +57,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 14;
+uint8_t misFirmwareVersion1 = 18;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -500,9 +501,20 @@ void uartCommTask(void const *argument) {
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-//						if (engineState == ENGINE_STOPPED){
 						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
-//						}
+
+					} else if (wakeUpFlag) {
+						wakeUpFlag = 0;
+						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+						if (raspOffState == 2)  {
+							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+							osDelay(100);
+							raspOffState = 0;
+						}
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 					}
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
 					break;

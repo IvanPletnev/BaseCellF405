@@ -121,6 +121,9 @@ uint16_t stateChangeCounter = 0;
 uint8_t raspOffState = 0;
 uint8_t timeOutFlag = 0;
 
+uint16_t wakeUpPinCounter = 0;
+uint8_t wakeUpFlag = 0;
+
 uint32_t secondCounter = 0;
 
 uint16_t pulseDuration = 0;
@@ -1316,6 +1319,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /*------------------------------------------------------------------------------------------*/
 
+
 	switch (raspOffState) {
 
 	case 0:
@@ -1418,9 +1422,24 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  }
 		  break;
 	  }
+/*------------------------------------------------------------------------------------------*/
+
+	  if (HAL_GPIO_ReadPin(WKUP_GPIO_Port, WKUP_Pin) == GPIO_PIN_SET) {
+		  if (wakeUpPinCounter < 100) {
+			  wakeUpPinCounter++;
+		  } else {
+			  wakeUpPinCounter = 0;
+			  wakeUpFlag = 1;
+		  }
+	  } else {
+		  wakeUpPinCounter = 0;
+	  }
+
 	}
 	
 /*------------------------------------------------------------------------------------------*/
+
+
 
 
 	if (htim->Instance == TIM13) {
