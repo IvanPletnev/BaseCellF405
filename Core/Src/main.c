@@ -1095,7 +1095,7 @@ void accelTask(void const * argument)
 
 	osEvent evt;
 	uint8_t buffer[6];
-//	sensorsData *sensors = {0};
+	sensorsData *sensors = {0};
 //	osDelay(1000);
 	HAL_I2C_Init(&hi2c2);
 	ADXL345_Init();
@@ -1121,11 +1121,11 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-//			sensors = osMailAlloc(qSensorsHandle, osWaitForever);
-//			sensors->source = ADXL_TASK;
-//			sensors->size = ADXL_SIZE;
-//			memcpy (sensors->payload, buffer, 6);
-//			osMailPut(qSensorsHandle, sensors);
+			sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+			sensors->source = ADXL_TASK;
+			sensors->size = ADXL_SIZE;
+			memcpy (sensors->payload, buffer, 6);
+			osMailPut(qSensorsHandle, sensors);
 		}
 	}
   /* USER CODE END accelTask */
@@ -1438,8 +1438,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	}
 	
 /*------------------------------------------------------------------------------------------*/
-
-
 
 
 	if (htim->Instance == TIM13) {

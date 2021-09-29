@@ -18,7 +18,7 @@ void ADXL345_Init(void) {
     //Full resolution, +/-16g, 4mg/LSB.
 //    setDataFormatControl(0x01);
     setDataFormatControl(0x02);
-    setTapThreshold(200);
+    setTapThreshold(128);
     setTapDuration(50);
     setTapAxisControl(0x07);
     setInterruptMappingControl(0x40);

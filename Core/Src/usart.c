@@ -57,7 +57,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 18;
+uint8_t misFirmwareVersion1 = 19;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -407,7 +407,8 @@ void uartCommTask(void const *argument) {
 				raspTxBuf[2] = ADXL_PACK_SIZE;
 				memcpy(raspTxBuf + PACK_HEADER_SIZE, sensors->payload,
 						ADXL_SIZE);
-				raspTxBuf[ADXL_PACK_SIZE] = 0x55;
+				raspTxBuf[ADXL_PACK_SIZE-2] = get_check_sum(raspTxBuf, ADXL_PACK_SIZE);
+				raspTxBuf[ADXL_PACK_SIZE-1] = 0x55;
 				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, ADXL_PACK_SIZE); // -> В Raspberry
 
 			} else if (sensors->source == RASP_UART_SRC) { //пакет от RaspberryPi - управление подсветкой и платой управления питанием
