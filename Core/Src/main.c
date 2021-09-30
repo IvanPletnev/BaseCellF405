@@ -1309,7 +1309,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /*------------------------------------------------------------------------------------------*/
 
-		if (secondCounter >= 1200){
+		if (secondCounter >= 120){
 			secondCounter = 0;
 			if (engineState == ENGINE_STOPPED) {
 				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);

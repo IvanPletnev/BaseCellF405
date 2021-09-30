@@ -390,6 +390,8 @@ void uartCommTask(void const *argument) {
 
 	sensorsData *sensors;
 	osEvent event, evt;
+	static uint8_t counter = 0;
+	static uint8_t engineStopCounter = 0;
 //	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
@@ -469,23 +471,36 @@ void uartCommTask(void const *argument) {
 
 					if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
-						engineState = ENGINE_STARTED;
-						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if (raspOffState == 2) {
-							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-							osDelay(100);
-							raspOffState = 0;
+						engineStopCounter = 0;
+						if (counter < 3) {
+							counter++;
+						} else {
+							counter = 0;
+							engineState = ENGINE_STARTED;
+							HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+							if (raspOffState == 2) {
+								HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+								osDelay(100);
+								raspOffState = 0;
+							}
+							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+							HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+							HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+							osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 						}
-						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 
-					} else if (onBoardVoltage < ENGINE_STOP_LEVEL)
-					{
-						engineState = ENGINE_STOPPED;
-						if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
-							onboardAlarmFlag = 1;
+					} else {
+						counter = 0;
+						if (onBoardVoltage < ENGINE_STOP_LEVEL){
+							if (engineStopCounter < 3) {
+								engineStopCounter++;
+							} else {
+								engineStopCounter = 0;
+								engineState = ENGINE_STOPPED;
+								if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
+									onboardAlarmFlag = 1;
+								}
+							}
 						}
 					}
 
