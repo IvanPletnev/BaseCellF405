@@ -20,5 +20,6 @@ typedef struct _lightdata {
 }lightData;
 
 uint8_t isAutoBrightnessEnable (void);
+extern lightData lightTable[TAB_ENTRY_COUNT];
 
 #endif /* INC_LIGHTMETER_H_ */

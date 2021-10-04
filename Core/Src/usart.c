@@ -151,6 +151,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	uint8_t state = 0;
 	uint8_t i;
 
+
 	switch (state) {
 
 	case 0:
@@ -360,13 +361,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			break;
 
 		case CMD_LIGHT_TABLE:
-//			table = osMailAlloc(qEepromHandle, 10);
-//			for (i = 0; i < TAB_ENTRY_COUNT; i++) {
-//				table[i]->apdsValue = (uint16_t)source[i*3 + 4] << 8;
-//				table[i]->apdsValue |= (uint16_t) source[i*3 + 5];
-//				table[i]->brightness = source[i*3 + 6];
-//			}
-//			osMailPut(qEepromHandle, table);
+
+			for (i = 0; i < TAB_ENTRY_COUNT; i++) {
+				lightTable[i].apdsValue = (uint16_t)source[i*3 + 4] << 8;
+				lightTable[i].apdsValue |= (uint16_t) source[i*3 + 5];
+				lightTable[i].brightness = source[i*3 + 6];
+			}
 			break;
 
 		case CMD_SET_DIMMING_TIME:
