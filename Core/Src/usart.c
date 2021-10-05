@@ -57,7 +57,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 19;
+uint8_t misFirmwareVersion1 = 22;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -150,7 +150,6 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	uint8_t destTempBuf[16] = {0};
 	uint8_t state = 0;
 	uint8_t i;
-
 
 	switch (state) {
 
@@ -354,6 +353,19 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			HAL_TIM_Base_Start_IT(&htim7);
 			break;
 
+		case CMD_PWR_ON:
+
+			destTempBuf[1] = CV_REQ_PACK_ID;
+			destTempBuf[2] = CV_REQ_SIZE;
+			destTempBuf[3] = CMD_PWR_ON;
+			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			setTxMode(6);
+			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim7, 0);
+			HAL_TIM_Base_Start_IT(&htim7);
+			break;
+
 		case CMD_ZERO_ON:
 
 			HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
@@ -367,6 +379,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 				lightTable[i].apdsValue |= (uint16_t) source[i*3 + 5];
 				lightTable[i].brightness = source[i*3 + 6];
 			}
+			sendRespToRasp(CMD_LIGHT_TABLE, RESPONSE_OK);
 			break;
 
 		case CMD_SET_DIMMING_TIME:
@@ -504,12 +517,12 @@ void uartCommTask(void const *argument) {
 						}
 					}
 
-					breaksStateTelem = breaksState = sensors->payload[19];
-
+					breaksStateTelem = sensors->payload[19];
+					breaksState = sensors->payload[19];
 					if (breaksState) {
 						breaksState = 0;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if (raspOffState == 2)  {
+						if ((raspOffState == 2) && (!breaksStateTelem))  {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 							osDelay(100);
 							raspOffState = 0;
@@ -559,7 +572,6 @@ void uartCommTask(void const *argument) {
 
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 		if (evt.status == osEventSignal) {
-
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 		}
 	}

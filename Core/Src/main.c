@@ -135,6 +135,7 @@ extern uint8_t engineState;
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByte;
+extern uint8_t breaksStateTelem;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -1300,6 +1301,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			sensor->size = CV_REQ_SIZE;
 			memcpy(sensor->payload, request, CV_REQ_SIZE);
 			osMailPut(qSensorsHandle, sensor);
+
 			if (engineState == ENGINE_STOPPED) {
 				secondCounter++;
 			} else {
@@ -1311,14 +1313,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		if (secondCounter >= 120){
 			secondCounter = 0;
-			if (engineState == ENGINE_STOPPED) {
+			if ((engineState == ENGINE_STOPPED) && (!breaksStateTelem)) {
 				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 			}
 		}
 
 /*------------------------------------------------------------------------------------------*/
-
 
 	switch (raspOffState) {
 
@@ -1329,6 +1330,15 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				raspOffCounter = 0;
 				raspOffState++;
+//				sensor = osMailAlloc(qSensorsHandle, 0);
+//				sensor->source = RASP_UART_SRC;
+//				sensor->size = CV_REQ_SIZE;
+//				sensor->payload[0] = 0xAA;
+//				sensor->payload[1] = RASP_IN_PACK_ID;
+//				sensor->payload[2] = CV_REQ_SIZE;
+//				sensor->payload[3] = CMD_PWR_ON;
+//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+//				sensor->payload[5] = 0x55;
 			}
 		} else {
 			raspOffCounter = 0;
@@ -1360,7 +1370,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 2:
-		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+		if ((HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) && (!breaksStateTelem)) {
 			stateChangeCounter = 0;
 			if (raspOffCounter < 119950) {
 				raspOffCounter++;
@@ -1422,6 +1432,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		  }
 		  break;
 	  }
+
 /*------------------------------------------------------------------------------------------*/
 
 	  if (HAL_GPIO_ReadPin(WKUP_GPIO_Port, WKUP_Pin) == GPIO_PIN_SET) {
