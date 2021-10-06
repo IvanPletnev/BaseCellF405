@@ -522,7 +522,7 @@ void uartCommTask(void const *argument) {
 					if (breaksState) {
 						breaksState = 0;
 						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if ((raspOffState == 2) && (!breaksStateTelem))  {
+						if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
 							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 							osDelay(100);
 							raspOffState = 0;

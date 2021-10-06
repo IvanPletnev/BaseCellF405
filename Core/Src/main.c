@@ -187,7 +187,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
+   HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -1302,8 +1302,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			memcpy(sensor->payload, request, CV_REQ_SIZE);
 			osMailPut(qSensorsHandle, sensor);
 
-			if (engineState == ENGINE_STOPPED) {
-				secondCounter++;
+			if (engineState == ENGINE_STOPPED)  {
+				if (!breaksStateTelem){
+					secondCounter++;
+				} else {
+					secondCounter = 0;
+				}
 			} else {
 				secondCounter = 0;
 			}
@@ -1313,7 +1317,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		if (secondCounter >= 120){
 			secondCounter = 0;
-			if ((engineState == ENGINE_STOPPED) && (!breaksStateTelem)) {
+			if (engineState == ENGINE_STOPPED)  {
 				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 			}
@@ -1370,10 +1374,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 2:
-		if ((HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) && (!breaksStateTelem)) {
+		if ((HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET)) {
 			stateChangeCounter = 0;
 			if (raspOffCounter < 119950) {
-				raspOffCounter++;
+				if (!breaksStateTelem){
+					raspOffCounter++;
+				} else {
+					raspOffCounter = 0;
+				}
 			} else {
 				raspOffCounter = 0;
 				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
