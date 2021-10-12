@@ -129,7 +129,7 @@ void setStatusBytes (void);
 #define RASP_TIMEOUT_ID		0x0004
 #define WATCHDOG_ID			0x0005
 
-#define MAIL_SIZE			16
+#define MAIL_SIZE			24
 #define APDS_TASK_SOURCE	0
 #define ADXL_TASK			1
 #define DHT22_TASK_SOURCE	2
