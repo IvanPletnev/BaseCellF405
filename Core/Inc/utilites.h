@@ -21,7 +21,7 @@ typedef struct _filterType
 } filterType;      // упаковать данные
 
 // определяем масcив данных фильтра
-extern filterType filter[CHANNELS];        // как внешний
+extern filterType currentFilter[CHANNELS];        // как внешний
 
 int16_t filtering(int16_t input_data, filterType * flt);
 
