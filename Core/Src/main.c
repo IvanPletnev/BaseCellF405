@@ -84,8 +84,6 @@ osThreadId lightMeterHandle;
 osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
-osThreadId tempHumMeasHandle;
-osThreadId eepromHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
@@ -140,6 +138,8 @@ extern uint8_t breaksStateTelem;
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
 
+volatile unsigned long ulHighFrequencyTimerTicks;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -162,8 +162,6 @@ void lightMeterTask(void const * argument);
 void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
-void TempHumTask(void const * argument);
-void eepromTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -187,8 +185,7 @@ int main(void)
   /* MCU Configuration--------------------------------------------------------*/
 
   /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-
-	HAL_Init();
+  HAL_Init();
 
   /* USER CODE BEGIN Init */
 
@@ -223,13 +220,11 @@ int main(void)
 //  allConsumersEnable();
 
   HAL_TIM_Base_Start_IT(&htim11);
-  HAL_TIM_Base_Stop_IT(&htim14);
-  __HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
+
 //  	HAL_I2C_DeInit(&hi2c2);
 	TLA2024_Init();
-
 	HAL_TIM_Base_Stop_IT(&htim13);
-	HAL_FLASH_Unlock();
+//	HAL_FLASH_Unlock();
 
 //	  if( EE_Init() != EE_OK)
 //	  {
@@ -293,14 +288,6 @@ int main(void)
   /* definition and creation of uartComm */
   osThreadDef(uartComm, uartCommTask, osPriorityNormal, 0, 256);
   uartCommHandle = osThreadCreate(osThread(uartComm), NULL);
-
-  /* definition and creation of tempHumMeas */
-  osThreadDef(tempHumMeas, TempHumTask, osPriorityNormal, 0, 128);
-  tempHumMeasHandle = osThreadCreate(osThread(tempHumMeas), NULL);
-
-  /* definition and creation of eeprom */
-  osThreadDef(eeprom, eepromTask, osPriorityNormal, 0, 128);
-  eepromHandle = osThreadCreate(osThread(eeprom), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -641,9 +628,9 @@ static void MX_TIM14_Init(void)
 
   /* USER CODE END TIM14_Init 1 */
   htim14.Instance = TIM14;
-  htim14.Init.Prescaler = 65535;
+  htim14.Init.Prescaler = 83;
   htim14.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim14.Init.Period = 65535;
+  htim14.Init.Period = 99;
   htim14.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim14.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim14) != HAL_OK)
@@ -883,6 +870,18 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+
+void configureTimerForRunTimeStats(void)
+{
+	ulHighFrequencyTimerTicks = 0;
+	HAL_TIM_Base_Start_IT(&htim14);
+}
+
+unsigned long getRunTimeCounterValue(void)
+{
+return ulHighFrequencyTimerTicks;
+}
+
 void setStatusBytes (void) {
 
 	if (HAL_GPIO_ReadPin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin) == GPIO_PIN_SET){
@@ -1216,53 +1215,6 @@ __weak void uartCommTask(void const * argument)
   /* USER CODE BEGIN uartCommTask */
 
   /* USER CODE END uartCommTask */
-}
-
-/* USER CODE BEGIN Header_TempHumTask */
-/**
-* @brief Function implementing the tempHumMeas thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_TempHumTask */
-void TempHumTask(void const * argument)
-{
-  /* USER CODE BEGIN TempHumTask */
-//	sensorsData *sensors = {0};
-
-	osDelay(200);
-	/* Infinite loop */
-	for (;;) {
-//		DHT22_Read(0);
-//		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
-//		sensors->source = DHT22_TASK;
-//		sensors->size = DHT22_SIZE;
-//		memset(sensors->payload, 0, 16);
-//		sensors->payload[0] = dht22_buf.tMSB; sensors->payload[1] = dht22_buf.tLSB;
-//		sensors->payload[2] = dht22_buf.hMSB; sensors->payload[3] = dht22_buf.hLSB;
-//		osMailPut(qSensorsHandle, sensors);
-		osDelay(200);
-	}
-  /* USER CODE END TempHumTask */
-}
-
-/* USER CODE BEGIN Header_eepromTask */
-/**
-* @brief Function implementing the eeprom thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_eepromTask */
-void eepromTask(void const * argument)
-{
-  /* USER CODE BEGIN eepromTask */
-
-	/* Infinite loop */
-	for (;;) {
-
-		osDelay(1);
-	}
-  /* USER CODE END eepromTask */
 }
 
 /**

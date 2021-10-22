@@ -73,7 +73,7 @@ extern UART_HandleTypeDef huart6;
 extern TIM_HandleTypeDef htim6;
 
 /* USER CODE BEGIN EV */
-
+extern volatile unsigned long ulHighFrequencyTimerTicks;
 /* USER CODE END EV */
 
 /******************************************************************************/
@@ -278,7 +278,7 @@ void TIM8_UP_TIM13_IRQHandler(void)
 void TIM8_TRG_COM_TIM14_IRQHandler(void)
 {
   /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 0 */
-
+	ulHighFrequencyTimerTicks++;
   /* USER CODE END TIM8_TRG_COM_TIM14_IRQn 0 */
   HAL_TIM_IRQHandler(&htim14);
   /* USER CODE BEGIN TIM8_TRG_COM_TIM14_IRQn 1 */
