@@ -57,7 +57,7 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 23;
+uint8_t misFirmwareVersion1 = 24;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;

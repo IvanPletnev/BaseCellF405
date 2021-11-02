@@ -9,25 +9,24 @@
 
 #define DISCRETE		10
 
-uint16_t lightLevel = 0;
-uint16_t lightLevel1 = 0;
 
-uint32_t lightSum = 0;
 extern osMailQId qSensorsHandle;
 
 lightData lightTable[TAB_ENTRY_COUNT] = {
+
 	{0, 2},
-	{100, 6},
-	{2000, 10},
-	{10000, 15},
-	{19662, 20},
-	{26216, 30},
-	{32768, 40},
-	{39322, 50},
+	{100, 10},
+	{300, 15},
+	{700, 25},
+	{1000, 30},
+	{10000, 45},
+	{19662, 50},
+	{26216, 55},
+	{32768, 60},
 	{45875, 60},
-	{52428, 60},
 	{58982, 60},
 	{65535, 60}
+
 };
 
 uint8_t getAutoBrightness (uint16_t apds){
@@ -53,15 +52,12 @@ uint8_t isAutoBrightnessEnable (void){
 	return value;
 }
 
-void setAutoBrightnessPacket (sensorsData *arg){
+void setAutoBrightnessPacket (sensorsData *arg, uint32_t light){
 
 	uint8_t i = 0;
 	uint8_t autoBrValue = 0;
 
-	autoBrValue = getAutoBrightness((uint16_t)lightSum);
-
-//	autoBrValue = (autoBrValue + (DISCRETE / 2)) / DISCRETE;
-//	autoBrValue *= DISCRETE;
+	autoBrValue = getAutoBrightness((uint16_t)light);
 
 	arg->payload[0] = PACKET_HEADER;
 	arg->payload[1] = BL_OUT_PACK_ID;
@@ -85,14 +81,18 @@ void setAutoBrightnessPacket (sensorsData *arg){
 
 void lightMeterTask(void const * argument) {
 
-	static uint8_t light0[2];
-	static uint8_t light1[2];
-	static uint8_t red0[2];
-	static uint8_t red1[2];
-	static uint8_t green0[2];
-	static uint8_t green1[2];
-	static uint8_t blue0[2];
-	static uint8_t blue1[2];
+	uint8_t light0[2];
+	uint8_t light1[2];
+	uint8_t red0[2];
+	uint8_t red1[2];
+	uint8_t green0[2];
+	uint8_t green1[2];
+	uint8_t blue0[2];
+	uint8_t blue1[2];
+
+	uint16_t lightLevel = 0;
+	uint16_t lightLevel1 = 0;
+	uint32_t lightSum = 0;
 	sensorsData *sensors = {0};
 	sensorsData *autoBlQueue = {0};
 	osDelay(500);
@@ -115,9 +115,9 @@ void lightMeterTask(void const * argument) {
 		lightLevel |= light0[1];
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
-		lightSum = (lightLevel + lightLevel1) / 2;
+		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
 
-		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+		sensors = osMailAlloc(qSensorsHandle, 1);
 		sensors->source = APDS_TASK_SOURCE;
 		sensors->size = APDS_SIZE;
 //		memset(sensors->payload, 0, 16);
@@ -128,10 +128,10 @@ void lightMeterTask(void const * argument) {
 		osMailPut(qSensorsHandle, sensors);
 
 		if (isAutoBrightnessEnable() != 0){
-			autoBlQueue = osMailAlloc(qSensorsHandle, osWaitForever);
+			autoBlQueue = osMailAlloc(qSensorsHandle, 1);
 			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 			autoBlQueue->size = BL_AUTO_CTL_SIZE;
-			setAutoBrightnessPacket(autoBlQueue);
+			setAutoBrightnessPacket(autoBlQueue, lightSum);
 			osMailPut(qSensorsHandle, autoBlQueue);
 		}
 		osDelay(1000);
