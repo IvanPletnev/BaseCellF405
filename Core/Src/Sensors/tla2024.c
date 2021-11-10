@@ -91,7 +91,7 @@ uint8_t * sensors_send_buf[] = {send_buf1, send_buf2, send_buf3};
 uint8_t sensors[3] = {TLA2024_ADDRESS_2, TLA2024_ADDRESS_1, TLA2024_ADDRESS_3};
 uint8_t counter_try = 0;
 
-uint16_t temperature;
+
 float tempVar;
 
 
@@ -142,25 +142,27 @@ tPoint line[TEMP_TAB_COUNT] = {// x - температура, y - значени
 
 
 
-uint16_t tmp_val;
 
-uint16_t getTemp (uint16_t adc){ //Метод кусочно-линейной аппроксимации
+int16_t getTemp (uint16_t adc){ //Метод кусочно-линейной аппроксимации
+
 	uint8_t i=0;
 	uint16_t adc10;
 	float k; //наклон характеристики
 	float c; //смещение относительно 0 по Y
 	float value;
 	adc10 = adc*10; //умножаем код АЦП на 10, в таблице также значения, умноженные на 10
+
 	for (i = 0; i < TEMP_TAB_COUNT-1; i++){
 		if ((adc10 <= line[i].y)&&(adc10 >= line[i+1].y)) {
 			k = ((float)line[i].x - (float)line[i+1].x)/((float)line[i].y - (float)line[i+1].y);
 			c = (float)line[i].x - k*(float)line[i].y;
 			value = k * adc10 + c; //уравнение текущего (i) отрезка
-			if (value >= 0){
-				return (uint16_t) value;
-			} else {
-				return (uint16_t) value | 0x8000;//Добавляем признак отрицательного числа
-			}
+//			if (value >= 0){
+//				return (uint16_t) value;
+//			} else {
+//				return ((uint16_t) value) | 0x8000;//Добавляем признак отрицательного числа
+//			}
+			return (int16_t) value;
 		}
 	}
 	return 0;
@@ -175,6 +177,9 @@ void TLA2024_Init()
 
 uint8_t TLA2024_Read(uint8_t nSensor, uint8_t *dest)
 {
+	int16_t temperature;
+	uint16_t tmp_val;
+
 	if (TLA2024_single_shot_conv_start(nSensor) == STATUS_FAIL)
 		return STATUS_FAIL;
 	

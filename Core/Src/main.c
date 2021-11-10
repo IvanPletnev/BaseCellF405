@@ -140,6 +140,10 @@ uint8_t tempSensorState = 0;
 
 volatile unsigned long ulHighFrequencyTimerTicks;
 
+int16_t debugTemp0;
+int16_t debugTemp1;
+int16_t debugTemp2;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -1146,9 +1150,9 @@ void tempMeasTask(void const * argument)
 	static uint8_t buffer1[2] = {0};
 	static uint8_t buffer2[2] = {0};
 
-	uint16_t temperature0 = 0;
-	uint16_t temperature1 = 0;
-	uint16_t temperature2 = 0;
+	int16_t temperature0 = 0;
+	int16_t temperature1 = 0;
+	int16_t temperature2 = 0;
 	static uint8_t fanState = 0;
 
 	sensorsData *sensors = {0};
@@ -1161,12 +1165,39 @@ void tempMeasTask(void const * argument)
 		tempSensorState = TLA2024_Read(0, buffer0);
 		TLA2024_Read(1, buffer1);
 		TLA2024_Read(2, buffer2);
-		temperature0 = (uint16_t)buffer0[0] << 8;
+
+		osMutexRelease(I2C2MutexHandle);
+		temperature0 = (int16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
-		temperature1 = (uint16_t)buffer1[0] << 8;
+		temperature1 = (int16_t)buffer1[0] << 8;
 		temperature1 |= buffer1[1];
-		temperature2 = (uint16_t)buffer2[0] << 8;
+		temperature2 = (int16_t)buffer2[0] << 8;
 		temperature2 |= buffer2[1];
+
+		debugTemp0 = temperature0;
+		debugTemp1 = temperature1;
+		debugTemp2 = temperature2;
+
+		if (temperature0 < 0) {
+			temperature0 = -temperature0;
+			temperature0 |= 0x8000;
+		}
+		if (temperature1 < 0) {
+			temperature1 = -temperature1;
+			temperature1 |= 0x8000;
+		}
+
+		if (temperature2 < 0) {
+			temperature2 = -temperature2;
+			temperature2 |= 0x8000;
+		}
+
+		buffer0[0] = (uint8_t)((temperature0 & 0xFF00) >> 8);
+		buffer0[1] = (uint8_t)(temperature0 & 0x00FF);
+		buffer1[0] = (uint8_t)((temperature1 & 0xFF00) >> 8);
+		buffer1[1] = (uint8_t)(temperature1 & 0x00FF);
+		buffer2[0] = (uint8_t)((temperature2 & 0xFF00) >> 8);
+		buffer2[1] = (uint8_t)(temperature2 & 0x00FF);
 
 		if ((tempSensorState == TEMP_SENSOR_FAIL) && (cvStatusByte & 0x06)) {
 
@@ -1189,7 +1220,6 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-		osMutexRelease(I2C2MutexHandle);
 		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
 		sensors->source = TLA2024_TASK_SOURCE;
 		sensors->size = TLA2024_SIZE;
