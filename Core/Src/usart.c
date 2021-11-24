@@ -57,14 +57,13 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 25;
+uint8_t misFirmwareVersion1 = 26;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
 
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
-
 	sensorsData *sensors;
 	uint8_t state = 0;
 

@@ -32,8 +32,11 @@ lightData lightTable[TAB_ENTRY_COUNT] = {
 uint8_t getAutoBrightness (uint16_t apds){
 	uint8_t i = 0;
 	for (i = 0; i < TAB_ENTRY_COUNT-1; i++) {
-		if ((apds >= lightTable[i].apdsValue) && (apds <= lightTable[i+1].apdsValue)) {
+		if ((apds > lightTable[i].apdsValue) && (apds <= lightTable[i+1].apdsValue)) {
 			return lightTable[i].brightness;
+		}
+		if (apds == 0){
+			return 2;
 		}
 	}
 	return 0;
