@@ -76,6 +76,8 @@ void setAutoBrightnessPacket (sensorsData *arg, uint32_t light){
 		if (brightnessValues[i] != 0){
 			if (autoBacklightflags[i]){
 				arg->payload[i+6] = autoBrValue;
+			} else {
+				arg->payload[i+6] = brightnessValues[i];
 			}
 		} else {
 			arg->payload[i+6] = 0;
@@ -133,13 +135,14 @@ void lightMeterTask(void const * argument) {
 		sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
 		osMailPut(qSensorsHandle, sensors);
 
-		if (isAutoBrightnessEnable() != 0){
+//		if (isAutoBrightnessEnable() != 0){
 			autoBlQueue = osMailAlloc(qSensorsHandle, 1);
 			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 			autoBlQueue->size = BL_AUTO_CTL_SIZE;
 			setAutoBrightnessPacket(autoBlQueue, lightSum);
+			autoBlQueue->payload[5] = dimmingTime;
 			osMailPut(qSensorsHandle, autoBlQueue);
-		}
+//		}
 		osDelay(1000);
 	}
 }
