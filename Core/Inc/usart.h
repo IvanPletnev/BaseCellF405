@@ -62,6 +62,7 @@ typedef enum _usartErrT {
 extern uint8_t autoBacklightflags[4];
 extern uint8_t brightnessValues[4];
 extern uint8_t dimmingTime;
+extern uint8_t engineState;
 
 
 

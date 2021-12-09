@@ -106,8 +106,10 @@ float Zresult;
 uint8_t shutdownFlag = 0;
 uint32_t shutdownCounter = 0;
 uint16_t gerconCounter = 0;
+uint16_t gerconCounter1 = 0;
 uint16_t cvRequestCounter = 0;
 uint8_t gerconState = 0;
+uint8_t wakeUpState = 0;
 
 uint32_t osTickCounter = 0;
 uint32_t osTickCounterOld = 0;
@@ -120,6 +122,7 @@ uint8_t raspOffState = 0;
 uint8_t timeOutFlag = 0;
 
 uint16_t wakeUpPinCounter = 0;
+uint16_t wakeUpOffCounter = 0;
 uint8_t wakeUpFlag = 0;
 
 uint32_t secondCounter = 0;
@@ -129,7 +132,7 @@ const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
 extern uint16_t onBoardVoltage;
-extern uint8_t engineState;
+
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByte;
@@ -940,7 +943,7 @@ void allConsumersEnable(void) {
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
 	HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
+//	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 //	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
@@ -952,7 +955,7 @@ void allConsumersEnable(void) {
 void allConsumersDisable(void) {
 //	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
 //	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
-	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
+//	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, RESET);
 //	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
@@ -1279,11 +1282,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		} else {
 			cvRequestCounter = 0;
-			sensor = osMailAlloc(qSensorsHandle, 0);
-			sensor->source = CV_REQ_SOURCE;
-			sensor->size = CV_REQ_SIZE;
-			memcpy(sensor->payload, request, CV_REQ_SIZE);
-			osMailPut(qSensorsHandle, sensor);
+//			sensor = osMailAlloc(qSensorsHandle, 0);
+//			sensor->source = CV_REQ_SOURCE;
+//			sensor->size = CV_REQ_SIZE;
+//			memcpy(sensor->payload, request, CV_REQ_SIZE);
+//			osMailPut(qSensorsHandle, sensor);
 
 			if (engineState == ENGINE_STOPPED)  {
 				if (!breaksStateTelem){
@@ -1312,10 +1315,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	case 0:
 		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET){
-			if (raspOffCounter < 20){
+			if (raspOffCounter < 5000){
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
+				HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 				raspOffState++;
 //				sensor = osMailAlloc(qSensorsHandle, 0);
 //				sensor->source = RASP_UART_SRC;
@@ -1339,16 +1343,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
-				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
-				sensor->source = RASP_UART_SRC;
-				sensor->size = CV_REQ_SIZE;
-				sensor->payload[0] = 0xAA;
-				sensor->payload[1] = RASP_IN_PACK_ID;
-				sensor->payload[2] = CV_REQ_SIZE;
-				sensor->payload[3] = CMD_BACKLIGHT_OFF;
-				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-				sensor->payload[5] = 0x55;
-				osMailPut(qSensorsHandle, sensor);
+				HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
+//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
+//				sensor->source = RASP_UART_SRC;
+//				sensor->size = CV_REQ_SIZE;
+//				sensor->payload[0] = 0xAA;
+//				sensor->payload[1] = RASP_IN_PACK_ID;
+//				sensor->payload[2] = CV_REQ_SIZE;
+//				sensor->payload[3] = CMD_BACKLIGHT_OFF;
+//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+//				sensor->payload[5] = 0x55;
+//				osMailPut(qSensorsHandle, sensor);
 				raspOffState++;
 			}
 		} else {
@@ -1357,6 +1362,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 2:
+
 		if ((HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET)) {
 			stateChangeCounter = 0;
 			if (raspOffCounter < 119950) {
@@ -1367,17 +1373,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				}
 			} else {
 				raspOffCounter = 0;
-				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
-				sensor->source = RASP_UART_SRC;
-				sensor->size = CV_REQ_SIZE;
-				sensor->payload[0] = 0xAA;
-				sensor->payload[1] = RASP_IN_PACK_ID;
-				sensor->payload[2] = CV_REQ_SIZE;
-				sensor->payload[3] = CMD_PWR_OFF;
-				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-				sensor->payload[5] = 0x55;
-				allConsumersDisable();
-				osMailPut(qSensorsHandle, sensor);
+//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
+//				sensor->source = RASP_UART_SRC;
+//				sensor->size = CV_REQ_SIZE;
+//				sensor->payload[0] = 0xAA;
+//				sensor->payload[1] = RASP_IN_PACK_ID;
+//				sensor->payload[2] = CV_REQ_SIZE;
+//				sensor->payload[3] = CMD_PWR_OFF;
+//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+//				sensor->payload[5] = 0x55;
+//				allConsumersDisable();
+//				osMailPut(qSensorsHandle, sensor);
 				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 				raspOffState = 0;
 			}
@@ -1393,52 +1399,133 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 	}
 
+
+
 /*------------------------------------------------------------------------------------------*/
 	
-	  switch (gerconState){
-	  case 0:
-		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-			  if (gerconCounter < 50){
- 				  gerconCounter++;
-			  } else {
-				  gerconCounter = 0;
-//				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-				  gerconState++;
-			  }
-		  } else {
-			  gerconCounter = 0;
-		  }
-		  break;
-	  case 1:
-		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-			  if (gerconCounter < 500){
-				  gerconCounter++;
-			  } else {
-//				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-				  gerconCounter = 0;
-				  gerconState = 0;
-			  }
-		  } else {
-			  gerconCounter = 0;
-		  }
-		  break;
-	  }
+//	  switch (gerconState){
+//
+//	  case 0:
+//		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+//			  if (gerconCounter < 50){
+// 				  gerconCounter++;
+//			  } else {
+//				  gerconCounter = 0;
+////				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+//				  gerconState++;
+//			  }
+//		  } else {
+//			  gerconCounter = 0;
+//		  }
+//		  break;
+//
+//	  case 1:
+//		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+//			  if (gerconCounter < 500){
+//				  gerconCounter++;
+//			  } else {
+////				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+//				  gerconCounter = 0;
+//				  gerconState = 0;
+//			  }
+//		  } else {
+//			  gerconCounter = 0;
+//		  }
+//		  break;
+//	  }
+
+	if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
+
+		gerconCounter1 = 0;
+		if (gerconState == 0){
+			if (gerconCounter < 50) {
+				gerconCounter++;
+			} else {
+				gerconCounter = 0;
+				gerconState = 1;
+			}
+		}
+	} else {
+
+		gerconCounter = 0;
+		if (gerconState == 1){
+			if (gerconCounter1 < 50){
+				gerconCounter1++;
+			} else {
+				gerconCounter1 = 0;
+				gerconState = 0;
+			}
+		}
+	}
 
 /*------------------------------------------------------------------------------------------*/
 
-	  if (HAL_GPIO_ReadPin(WKUP_GPIO_Port, WKUP_Pin) == GPIO_PIN_SET) {
-		  if (wakeUpPinCounter < 100) {
-			  wakeUpPinCounter++;
-		  } else {
-			  wakeUpPinCounter = 0;
-			  wakeUpFlag = 1;
-		  }
-	  } else {
-		  wakeUpPinCounter = 0;
-	  }
+		switch (wakeUpState) {
 
+		case 0:
+
+			if (HAL_GPIO_ReadPin(WKUP_GPIO_Port, WKUP_Pin) == GPIO_PIN_SET) {
+				if (wakeUpPinCounter < 1000) {
+					wakeUpPinCounter++;
+				} else {
+					wakeUpPinCounter = 0;
+					engineState = ENGINE_STARTED;
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					if (raspOffState == 2) {
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						raspOffState = 0;
+						wakeUpState++;
+					} else {
+						wakeUpState = 2;
+					}
+				}
+			} else {
+				wakeUpPinCounter = 0;
+			}
+			break;
+
+		case 1:
+
+			if (wakeUpPinCounter < 100) {
+				wakeUpPinCounter++;
+			} else {
+				wakeUpPinCounter = 0;
+				wakeUpState++;
+			}
+			break;
+
+		case 2:
+
+			HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+			HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+			HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+			osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+			wakeUpState++;
+			break;
+
+		case 3:
+
+			if (HAL_GPIO_ReadPin(WKUP_GPIO_Port, WKUP_Pin) == GPIO_PIN_RESET) {
+
+				if (wakeUpPinCounter < 500) {
+					wakeUpPinCounter++;
+				} else {
+					wakeUpPinCounter = 0;
+					engineState = ENGINE_STOPPED;
+					wakeUpState = 0;
+				}
+			} else {
+				wakeUpPinCounter = 0;
+			}
+			break;
+		}
 	}
 	
+
+	if ((engineState == ENGINE_STOPPED) && (gerconState == 0)) {
+		HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
+	}
+
 /*------------------------------------------------------------------------------------------*/
 
 
@@ -1499,4 +1586,3 @@ void assert_failed(uint8_t *file, uint32_t line)
 }
 #endif /* USE_FULL_ASSERT */
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
