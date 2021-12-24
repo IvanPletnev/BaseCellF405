@@ -132,6 +132,8 @@ const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
 extern uint8_t engineSwitchFlag;
 extern uint16_t onBoardVoltage;
+extern uint16_t bat1Voltage;
+extern uint16_t bat2Voltage;
 
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
@@ -1443,6 +1445,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				gerconCounter = 0;
 				gerconState = 1;
+				bat1Voltage = 1380;
+				bat2Voltage = 1380;
 			}
 		}
 	} else {
@@ -1454,6 +1458,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				gerconCounter1 = 0;
 				gerconState = 0;
+				bat1Voltage = 1000;
+				bat2Voltage = 1000;
 			}
 		}
 	}
@@ -1470,6 +1476,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				} else {
 					wakeUpPinCounter = 0;
 					engineState = ENGINE_STARTED;
+					onBoardVoltage = 1430;
 					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 					if (raspOffState == 2) {
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
@@ -1512,6 +1519,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				} else {
 					wakeUpPinCounter = 0;
 					engineState = ENGINE_STOPPED;
+					onBoardVoltage = 1200;
 					wakeUpState = 0;
 				}
 			} else {

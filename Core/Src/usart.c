@@ -43,6 +43,8 @@ uint8_t onboardAlarmFlag = 0;
 uint8_t chksum = 0;
 
 uint16_t onBoardVoltage = 0;
+uint16_t bat1Voltage = 0;
+uint16_t bat2Voltage = 0;
 uint8_t breaksState = 0;
 uint8_t breaksStateTelem = 0;
 uint8_t discreteInputState = 0;
@@ -56,8 +58,8 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
-uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 27;
+uint8_t misFirmwareVersion0 = 7;
+uint8_t misFirmwareVersion1 = 1;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -472,8 +474,14 @@ void uartCommTask(void const *argument) {
 				case CV_USART_SRC: //в порт пришел пакет от ячейки управления питанием
 
 					chksum = get_check_sum(sensors->payload, CV_RX_BUF_SIZE);
-					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
-					onBoardVoltage |= (uint16_t)sensors->payload[4];
+//					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
+//					onBoardVoltage |= (uint16_t)sensors->payload[4];
+					sensors->payload[3] = (uint8_t)((onBoardVoltage & 0xFF00) >> 8);
+					sensors->payload[4] = (uint8_t)(onBoardVoltage & 0x00FF);
+					sensors->payload[5] = (uint8_t)((bat1Voltage & 0xFF00) >> 8);
+					sensors->payload[6] = (uint8_t)(bat1Voltage & 0x00FF);
+					sensors->payload[7] = (uint8_t)((bat2Voltage & 0xFF00) >> 8);
+					sensors->payload[8] = (uint8_t)(bat2Voltage & 0x00FF);
 
 					discreteInputState = sensors->payload[20];
 					cvStatusByte = sensors->payload[21];
