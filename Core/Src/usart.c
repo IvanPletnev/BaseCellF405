@@ -315,6 +315,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_OFF;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -347,6 +348,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_ON;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
