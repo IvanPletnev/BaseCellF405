@@ -476,12 +476,7 @@ void uartCommTask(void const *argument) {
 					chksum = get_check_sum(sensors->payload, CV_RX_BUF_SIZE);
 //					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 //					onBoardVoltage |= (uint16_t)sensors->payload[4];
-					sensors->payload[3] = (uint8_t)((onBoardVoltage & 0xFF00) >> 8);
-					sensors->payload[4] = (uint8_t)(onBoardVoltage & 0x00FF);
-					sensors->payload[5] = (uint8_t)((bat1Voltage & 0xFF00) >> 8);
-					sensors->payload[6] = (uint8_t)(bat1Voltage & 0x00FF);
-					sensors->payload[7] = (uint8_t)((bat2Voltage & 0xFF00) >> 8);
-					sensors->payload[8] = (uint8_t)(bat2Voltage & 0x00FF);
+
 
 					discreteInputState = sensors->payload[20];
 					cvStatusByte = sensors->payload[21];
@@ -556,27 +551,32 @@ void uartCommTask(void const *argument) {
 					break;
 				}
 			}
-			setStatusBytes();
 
-			raspTxBuf[1] = STD_PACK_ID;
-			raspTxBuf[2] = STD_PACK_SIZE;
-			raspTxBuf[GERCON_OFFSET] = gerconState;
-			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
-			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
-			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
-			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
-			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
-			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
-			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
-			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
-			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
-			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 			osMailFree(qSensorsHandle, sensors); //освобождаем память под очередью
 		}
-
+		setStatusBytes();
+		raspTxBuf[CV_OFFSET] = (uint8_t)((onBoardVoltage & 0xFF00) >> 8);
+		raspTxBuf[1 + CV_OFFSET] = (uint8_t)(onBoardVoltage & 0x00FF);
+		raspTxBuf[2 + CV_OFFSET] = (uint8_t)((bat1Voltage & 0xFF00) >> 8);
+		raspTxBuf[3 + CV_OFFSET] = (uint8_t)(bat1Voltage & 0x00FF);
+		raspTxBuf[4 + CV_OFFSET] = (uint8_t)((bat2Voltage & 0xFF00) >> 8);
+		raspTxBuf[5 + CV_OFFSET] = (uint8_t)(bat2Voltage & 0x00FF);
+		raspTxBuf[1] = STD_PACK_ID;
+		raspTxBuf[2] = STD_PACK_SIZE;
+		raspTxBuf[GERCON_OFFSET] = gerconState;
+		raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
+		raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
+		raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
+		raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
+		raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
+		raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
+		raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
+		raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
+		raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
+		raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
+		raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
+		raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
+		raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 		if (evt.status == osEventSignal) {
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
