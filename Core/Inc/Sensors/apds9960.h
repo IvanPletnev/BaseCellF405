@@ -14,13 +14,13 @@
  #define APDS9960_I2C_ADDR       0x39<<1
 
  /* MPX I2C */
- #define MPX_I2C_ADDR       		0xE0
+ #define MPX_I2C_ADDR       	0xE0
  #define MPX_PWR_ON       		0x00
  #define MPX_CHAN_0       		0x04
  #define MPX_CHAN_1       		0x05
 
  #define STATUS_OK				0x01
- #define STATUS_FAIL				0x00
+ #define STATUS_FAIL			0x00
 
  /* Gesture parameters */
  #define GESTURE_THRESHOLD_OUT   10
