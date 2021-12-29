@@ -11,6 +11,7 @@
 
 
 extern osMailQId qSensorsHandle;
+uint8_t lightMeterStatusByte = 0;
 
 lightData lightTable[TAB_ENTRY_COUNT] = {
 
@@ -97,6 +98,10 @@ void lightMeterTask(void const * argument) {
 	uint8_t green1[2];
 	uint8_t blue0[2];
 	uint8_t blue1[2];
+	uint8_t aTime;
+
+	static uint8_t counter = 0;
+	static uint8_t counter1 = 0;
 
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
@@ -110,8 +115,12 @@ void lightMeterTask(void const * argument) {
 
 	for (;;) {
 
-		APDS9960_ReadLight(0, light0);
-		APDS9960_ReadLight(1, light1);
+		if(!APDS9960_ReadLight(0, light0)){
+			lightMeterStatusByte |= 0x01;
+		}
+		if (APDS9960_ReadLight(1, light1)){
+			lightMeterStatusByte |= 0x02;
+		}
 		APDS9960_ReadRedLight(0, red0);
 		APDS9960_ReadRedLight(1, red1);
 		APDS9960_ReadGreenLight(0, green0);
@@ -121,14 +130,62 @@ void lightMeterTask(void const * argument) {
 
 		lightLevel = (uint16_t)light0[0] << 8;
 		lightLevel |= light0[1];
+
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
+
+		if (lightLevel == 42405) {
+			if(++counter >= 5) {
+				counter = 0;
+				APDS9960_SetActiveChan(0);
+				if(getAmbientLightGain() != 0){
+					lightMeterStatusByte |= 0x04;
+				}
+				sensorReadDataByte(APDS9960_ATIME, &aTime);
+				if (aTime != 0xC0) {
+					lightMeterStatusByte |= 0x08;
+				}
+
+				if (lightMeterStatusByte & 0x0C) {
+					disableLightSensor();
+					disablePower();
+					osDelay(100);
+					enablePower();
+					init();
+					osDelay(500);
+				}
+			}
+		}
+
+		if (lightLevel1 == 44302) {
+			if(++counter1 >= 5) {
+				counter1 = 0;
+				APDS9960_SetActiveChan(1);
+				if(getAmbientLightGain() != 0){
+					lightMeterStatusByte |= 0x10;
+				}
+				sensorReadDataByte(APDS9960_ATIME, &aTime);
+				if (aTime != 0xC0) {
+					lightMeterStatusByte |= 0x20;
+				}
+
+				if (lightMeterStatusByte & 0x30) {
+					disableLightSensor();
+					disablePower();
+					osDelay(100);
+					enablePower();
+					init();
+					osDelay(500);
+				}
+			}
+		}
+
+
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
 
 		sensors = osMailAlloc(qSensorsHandle, 1);
 		sensors->source = APDS_TASK_SOURCE;
 		sensors->size = APDS_SIZE;
-//		memset(sensors->payload, 0, 16);
 		sensors->payload[0] = light0[0]; sensors->payload[1] = light0[1]; sensors->payload[2] = light1[0]; sensors->payload[3] = light1[1];
 		sensors->payload[4] = red0[0]; sensors->payload[5] = red0[1]; sensors->payload[6] = red1[0]; sensors->payload[7] = red1[1];
 		sensors->payload[8] = green0[0]; sensors->payload[9] = green0[1]; sensors->payload[10] = green1[0]; sensors->payload[11] = green1[1];
@@ -136,14 +193,14 @@ void lightMeterTask(void const * argument) {
 		osMailPut(qSensorsHandle, sensors);
 
 //		if (isAutoBrightnessEnable() != 0){
-			autoBlQueue = osMailAlloc(qSensorsHandle, 1);
-			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
-			autoBlQueue->size = BL_AUTO_CTL_SIZE;
-			setAutoBrightnessPacket(autoBlQueue, lightSum);
-			if (!isAutoBrightnessEnable()){
-				autoBlQueue->payload[5] = dimmingTime;
-			}
-			osMailPut(qSensorsHandle, autoBlQueue);
+		autoBlQueue = osMailAlloc(qSensorsHandle, 1);
+		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
+		autoBlQueue->size = BL_AUTO_CTL_SIZE;
+		setAutoBrightnessPacket(autoBlQueue, lightSum);
+		if (!isAutoBrightnessEnable()){
+			autoBlQueue->payload[5] = dimmingTime;
+		}
+		osMailPut(qSensorsHandle, autoBlQueue);
 //		}
 		osDelay(1000);
 	}
