@@ -29,7 +29,7 @@ extern TIM_HandleTypeDef htim13;
 extern uint32_t osTickCounter;
 extern uint8_t wakeUpFlag;
 extern uint8_t lightMeterStatusByte;
-uint8_t raspTxBuf[STD_PACK_SIZE];
+
 
 uint8_t dimmingTime = 0x32;
 uint8_t engineSwitchFlag = 0;
@@ -405,6 +405,7 @@ void uartCommTask(void const *argument) {
 	osEvent event, evt;
 	static uint8_t counter = 0;
 	static uint8_t engineStopCounter = 0;
+	uint8_t raspTxBuf[STD_PACK_SIZE] = {0};
 //	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
