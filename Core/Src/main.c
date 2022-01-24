@@ -132,7 +132,7 @@ extern uint16_t onBoardVoltage;
 extern uint8_t engineState;
 extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
-extern uint8_t cvStatusByte;
+extern uint8_t cvStatusByteExtern;
 extern uint8_t breaksStateTelem;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
@@ -1199,7 +1199,7 @@ void tempMeasTask(void const * argument)
 		buffer2[0] = (uint8_t)((temperature2 & 0xFF00) >> 8);
 		buffer2[1] = (uint8_t)(temperature2 & 0x00FF);
 
-		if ((tempSensorState == TEMP_SENSOR_FAIL) && (cvStatusByte & 0x06)) {
+		if ((tempSensorState == TEMP_SENSOR_FAIL) && (cvStatusByteExtern & 0x06)) {
 
 			HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
 
@@ -1265,7 +1265,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (htim->Instance == TIM11) {
 
-		if (tickCounter < 2000) {
+		if (tickCounter < 1000) {
 			tickCounter++;
 		} else {
 			tickCounter = 0;
