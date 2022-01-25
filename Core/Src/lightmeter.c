@@ -118,7 +118,7 @@ void lightMeterTask(void const * argument) {
 		if(!APDS9960_ReadLight(0, light0)){
 			lightMeterStatusByte |= 0x01;
 		}
-		if (APDS9960_ReadLight(1, light1)){
+		if (!APDS9960_ReadLight(1, light1)){
 			lightMeterStatusByte |= 0x02;
 		}
 		APDS9960_ReadRedLight(0, red0);
