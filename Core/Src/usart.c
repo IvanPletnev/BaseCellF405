@@ -52,7 +52,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 27;
+uint8_t misFirmwareVersion1 = 30;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -63,6 +63,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 	uint8_t state = 0;
 
 	HAL_UART_DMAStop(huart);
+	HAL_UART_AbortReceive(huart);
 
 	if (huart->Instance == USART6) {
 		sensors = osMailAlloc(qSensorsHandle, 0);

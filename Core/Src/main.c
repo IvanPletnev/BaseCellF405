@@ -1040,8 +1040,6 @@ void StartDefaultTask(void const * argument)
 {
   /* USER CODE BEGIN 5 */
 	osEvent event1;
-//	sensorsData *sensor;
-//	uint8_t counter = 0;
 
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
 	HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
@@ -1101,7 +1099,6 @@ void accelTask(void const * argument)
 	osEvent evt;
 	uint8_t buffer[6];
 	sensorsData *sensors = {0};
-//	osDelay(1000);
 	HAL_I2C_Init(&hi2c2);
 	ADXL345_Init();
 
