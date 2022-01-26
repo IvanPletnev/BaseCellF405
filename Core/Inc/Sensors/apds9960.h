@@ -204,6 +204,7 @@ extern uint8_t disablePower();
 extern uint8_t disableLightSensor();
 extern uint8_t enableLightSensor(uint8_t interrupts);
 extern uint8_t init(void);
+extern uint8_t mpxGetReg(uint8_t Register_Addr, uint8_t data);
 //extern uint8_t APDS9960_ReadClrTemp(uint8_t nSensor, uint8_t nClr);
 
 #endif

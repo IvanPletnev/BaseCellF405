@@ -23,10 +23,8 @@ extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
-extern uint32_t osTickCounterOld;
 
 extern TIM_HandleTypeDef htim13;
-extern uint32_t osTickCounter;
 extern uint8_t wakeUpFlag;
 extern uint8_t lightMeterStatusByte;
 

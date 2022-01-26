@@ -109,15 +109,10 @@ uint16_t gerconCounter = 0;
 uint16_t cvRequestCounter = 0;
 uint8_t gerconState = 0;
 
-uint32_t osTickCounter = 0;
-uint32_t osTickCounterOld = 0;
-uint32_t raspOffTimeoutCounter = 0;
+
 uint32_t raspOffCounter = 0;
-uint16_t raspOnCounter = 0;
-uint8_t raspOnFlag = 0;
 uint16_t stateChangeCounter = 0;
 uint8_t raspOffState = 0;
-uint8_t timeOutFlag = 0;
 
 uint16_t wakeUpPinCounter = 0;
 uint8_t wakeUpFlag = 0;

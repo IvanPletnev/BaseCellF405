@@ -197,11 +197,17 @@ uint8_t APDS9960_Init(void) {
 }
 
 uint8_t mpxPowerOn(void) {
-	return mpxSetReg(MPX_PWR_ON);
+	uint8_t retValue = 0;
+	retValue = mpxSetReg(MPX_PWR_ON);
+	osDelay(1);
+	return retValue;
 }
 
 uint8_t APDS9960_SetActiveChan(uint8_t n_chan) {
-	return mpxSetReg(mpx_reg[n_chan]);
+	uint8_t retValue = 0;
+	retValue = mpxSetReg(mpx_reg[n_chan]);
+	osDelay(1);
+	return retValue;
 }
 
 /**
@@ -2225,6 +2231,14 @@ uint8_t setGestureMode(uint8_t mode) {
  **********************************************************************************************/
 uint8_t mpxSetReg(uint8_t Register_Addr) {
 	if (HAL_I2C_Master_Transmit(&hi2c1, MPX_I2C_ADDR, &Register_Addr, 1, 50)
+			== HAL_OK)
+		return STATUS_OK;
+	else
+		return STATUS_FAIL;
+}
+
+uint8_t mpxGetReg(uint8_t Register_Addr, uint8_t data) {
+	if (HAL_I2C_Master_Receive(&hi2c1, MPX_I2C_ADDR, &data, 1, 50)
 			== HAL_OK)
 		return STATUS_OK;
 	else
