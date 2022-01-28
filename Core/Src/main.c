@@ -84,6 +84,7 @@ osThreadId lightMeterHandle;
 osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
+osThreadId cvMeasHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
@@ -171,6 +172,7 @@ void lightMeterTask(void const * argument);
 void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
+extern void cvTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -298,6 +300,10 @@ int main(void)
   osThreadDef(uartComm, uartCommTask, osPriorityNormal, 0, 256);
   uartCommHandle = osThreadCreate(osThread(uartComm), NULL);
 
+  /* definition and creation of cvMeas */
+  osThreadDef(cvMeas, cvTask, osPriorityNormal, 0, 128);
+  cvMeasHandle = osThreadCreate(osThread(cvMeas), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -376,7 +382,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
+  hi2c1.Init.ClockSpeed = 100000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

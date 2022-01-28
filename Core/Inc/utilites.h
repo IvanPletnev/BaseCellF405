@@ -10,8 +10,8 @@
 
 #include "main.h"
 
-#define FILTER_LEN 16
-#define CHANNELS 8
+#define FILTER_LEN 10
+#define CHANNELS 3
 
 typedef struct _filterType
 {
@@ -22,6 +22,7 @@ typedef struct _filterType
 
 // определяем масcив данных фильтра
 extern filterType currentFilter[CHANNELS];        // как внешний
+extern filterType voltageFilter[CHANNELS];
 
 int16_t filtering(int16_t input_data, filterType * flt);
 

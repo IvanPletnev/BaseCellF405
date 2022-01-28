@@ -139,9 +139,11 @@ void setStatusBytes (void);
 #define	BL_AUTO_CONTROL_SRC	6
 #define	CV_REQ_SOURCE		7
 #define CV_RESP_SOURCE		8
+#define	CV_INA219_SOURCE	9
 #define CV_RESP_SIZE		8
 #define RESERVE_SIZE		3
 #define CV_STATUS_SIZE		2
+#define CV_INA219_SIZE		12
 #define MIS_STATUS_SIZE		2
 #define BL_AUTO_CTL_SIZE	12
 #define	APDS_SIZE			16
