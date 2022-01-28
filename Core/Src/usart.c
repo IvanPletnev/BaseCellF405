@@ -28,6 +28,7 @@ extern uint32_t osTickCounterOld;
 extern TIM_HandleTypeDef htim13;
 extern uint32_t osTickCounter;
 extern uint8_t wakeUpFlag;
+uint8_t raspTxBuf[STD_PACK_SIZE];
 
 
 uint8_t dimmingTime = 0x32;
@@ -406,7 +407,7 @@ void uartCommTask(void const *argument) {
 
 	sensorsData *sensors;
 	osEvent event, evt;
-	uint8_t raspTxBuf[STD_PACK_SIZE];
+//	uint8_t raspTxBuf[STD_PACK_SIZE];
 
 //	uint8_t destTempBuf[6] = {0};
 

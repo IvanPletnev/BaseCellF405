@@ -47,7 +47,7 @@ void cvTask(void const * argument){
 			averageVoltage[1] = filtering(rawVoltage[1], &voltageFilter[1]);
 			averageVoltage[2] = filtering(rawVoltage[2], &voltageFilter[2]);
 
-			osDelay(100);
+			osDelay(600);
 
 			} else {
 				i = 0;
