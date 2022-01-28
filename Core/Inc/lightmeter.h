@@ -11,6 +11,7 @@
 #include "main.h"
 #include "apds9960.h"
 #include "usart.h"
+#include "utilites.h"
 
 #define TAB_ENTRY_COUNT	12
 
