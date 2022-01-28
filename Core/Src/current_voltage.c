@@ -27,7 +27,7 @@ void cvTask(void const * argument){
 
 	for(;;){
 
-		if (i < 10) {
+		if (i++ < 10) {
 
 			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
 			}

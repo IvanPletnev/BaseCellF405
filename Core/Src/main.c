@@ -1276,7 +1276,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	if (htim->Instance == TIM11) {
 
-		if (tickCounter < 2000) {
+		if (tickCounter < 1000) {
 			tickCounter++;
 		} else {
 			tickCounter = 0;
