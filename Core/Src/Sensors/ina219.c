@@ -47,9 +47,9 @@ float shuntVoltage[3];
 void ina219Init(void) {
 	ina219CurrentDivider_mA = 0;
 	ina219PowerDivider_mW = 0;
-	ina219SetCalibration_16V_80A(0);
-	ina219SetCalibration_16V_80A(1);
-	ina219SetCalibration_16V_80A(2);
+	ina219SetCalibration_16V_80A_075mOhm(0);
+	ina219SetCalibration_16V_80A_075mOhm(1);
+	ina219SetCalibration_16V_80A_05mOhm(2);
 }
 
 /**************************************************************************/
