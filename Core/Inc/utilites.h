@@ -10,8 +10,8 @@
 
 #include "main.h"
 
-#define FILTER_LEN 16
-#define CHANNELS 8
+#define FILTER_LEN 6
+#define CHANNELS 1
 
 typedef struct _filterType
 {
