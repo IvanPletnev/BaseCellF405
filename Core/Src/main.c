@@ -216,21 +216,10 @@ int main(void)
 
   HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
 
-//  allConsumersEnable();
-
   HAL_TIM_Base_Start_IT(&htim11);
 
-//  	HAL_I2C_DeInit(&hi2c2);
 	TLA2024_Init();
 	HAL_TIM_Base_Stop_IT(&htim13);
-//	HAL_FLASH_Unlock();
-
-//	  if( EE_Init() != EE_OK)
-//	  {
-//	    Error_Handler();
-//	  }
-//
-//	  EE_WriteVariable(0x0000, 0x5555);
 
   /* USER CODE END 2 */
 
@@ -932,28 +921,22 @@ void setStatusBytes (void) {
 
 void allConsumersEnable(void) {
 
-//	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
 	HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
 	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-//	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, SET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, SET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, SET);
 	HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
 }
 
 void allConsumersDisable(void) {
-//	HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
-//	HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__12V_2_GPIO_Port, GPIO__12V_2_Pin, RESET);
-//	HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_GPIO_Port, FAN_Pin, RESET);
 	HAL_GPIO_WritePin(FAN_2_GPIO_Port, FAN_2_Pin, RESET);
 	HAL_GPIO_WritePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin, RESET);
-//	HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, RESET);
 }
 
 
@@ -995,32 +978,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
-//	if (GPIO_Pin == GPIO_PIN_0) {
-//		osSignalSet(defaultTaskHandle, CV_EXT_INTERRUPT_ID);
-//	}
 	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
 	}
 
-//	switch (pulseState) {
-//	case 0:
-//		if (GPIO_Pin == GPIO_PIN_12) {
-//			__HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
-//			__HAL_TIM_SET_COUNTER(&htim14, 0);
-//			HAL_TIM_Base_Start_IT(&htim14);
-//
-//			pulseState++;
-//		}
-//		break;
-//	case 1:
-//		if (GPIO_Pin == GPIO_PIN_12) {
-//			HAL_TIM_Base_Stop_IT(&htim14);
-//			pulseDuration = __HAL_TIM_GET_COUNTER(&htim14);
-//			__HAL_TIM_SET_COUNTER(&htim14, 0);
-//			HAL_TIM_Base_Start_IT(&htim14);
-//		}
-//		break;
-//	}
 }
 /* USER CODE END 4 */
 
@@ -1309,15 +1270,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				raspOffCounter = 0;
 				raspOffState++;
-//				sensor = osMailAlloc(qSensorsHandle, 0);
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_PWR_ON;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
 			}
 		} else {
 			raspOffCounter = 0;
@@ -1394,7 +1346,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  				  gerconCounter++;
 			  } else {
 				  gerconCounter = 0;
-//				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 				  gerconState++;
 			  }
 		  } else {
@@ -1406,7 +1357,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			  if (gerconCounter < 500){
 				  gerconCounter++;
 			  } else {
-//				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
 				  gerconCounter = 0;
 				  gerconState = 0;
 			  }
@@ -1446,9 +1396,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		osMailPut(qSensorsHandle, sensor1);
 	}
 
-//	if (htim->Instance == TIM14) {
-//		osMessagePut(watchDogQHandle, WATCHDOG_ID, 0);
-//	}
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {

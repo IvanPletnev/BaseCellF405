@@ -84,9 +84,6 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
-//				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
-//					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
-//				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 				HAL_TIM_Base_Stop_IT(&htim13);
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -109,10 +106,6 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 		memcpy (sensors->payload, raspRxBuf, sensors->size);
 		osMailPut(qSensorsHandle, sensors);
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
-//		if (get_check_sum(raspRxBuf, size) != raspRxBuf[size - 3]) {
-//			sendRespToRasp(0, RESPONSE_ERROR);
-//			return;
-//		}
 	}
 }
 
