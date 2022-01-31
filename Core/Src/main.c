@@ -63,6 +63,8 @@ I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 
+SPI_HandleTypeDef hspi2;
+
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim11;
@@ -84,6 +86,8 @@ osThreadId lightMeterHandle;
 osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
+osThreadId canRxHandle;
+osThreadId canTxHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
@@ -156,11 +160,14 @@ static void MX_TIM7_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_SPI2_Init(void);
 void StartDefaultTask(void const * argument);
 void lightMeterTask(void const * argument);
 void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
+extern void canRxTask(void const * argument);
+extern void canTxTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -211,6 +218,7 @@ int main(void)
   MX_TIM11_Init();
   MX_TIM13_Init();
   MX_TIM14_Init();
+  MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(TXRX6_GPIO_Port, TXRX6_Pin, RESET);
 
@@ -276,6 +284,14 @@ int main(void)
   /* definition and creation of uartComm */
   osThreadDef(uartComm, uartCommTask, osPriorityNormal, 0, 256);
   uartCommHandle = osThreadCreate(osThread(uartComm), NULL);
+
+  /* definition and creation of canRx */
+  osThreadDef(canRx, canRxTask, osPriorityNormal, 0, 256);
+  canRxHandle = osThreadCreate(osThread(canRx), NULL);
+
+  /* definition and creation of canTx */
+  osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 128);
+  canTxHandle = osThreadCreate(osThread(canTx), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -438,6 +454,44 @@ static void MX_I2C3_Init(void)
   /* USER CODE BEGIN I2C3_Init 2 */
 
   /* USER CODE END I2C3_Init 2 */
+
+}
+
+/**
+  * @brief SPI2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_SPI2_Init(void)
+{
+
+  /* USER CODE BEGIN SPI2_Init 0 */
+
+  /* USER CODE END SPI2_Init 0 */
+
+  /* USER CODE BEGIN SPI2_Init 1 */
+
+  /* USER CODE END SPI2_Init 1 */
+  /* SPI2 parameter configuration*/
+  hspi2.Instance = SPI2;
+  hspi2.Init.Mode = SPI_MODE_MASTER;
+  hspi2.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi2.Init.NSS = SPI_NSS_SOFT;
+  hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi2.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi2.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi2.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi2.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN SPI2_Init 2 */
+
+  /* USER CODE END SPI2_Init 2 */
 
 }
 
@@ -1111,6 +1165,7 @@ void tempMeasTask(void const * argument)
 	sensorsData *sensors = {0};
 
 	osDelay(500);
+
 	/* Infinite loop */
 	for (;;) {
 		if (osMutexWait(I2C2MutexHandle, 50) != osOK){
