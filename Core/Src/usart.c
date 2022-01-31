@@ -71,6 +71,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 	uint8_t state = 0;
 
 	HAL_UART_DMAStop(huart);
+	HAL_UART_AbortReceive(huart);
 
 	if (huart->Instance == USART6) {
 		sensors = osMailAlloc(qSensorsHandle, 0);
@@ -483,7 +484,7 @@ void uartCommTask(void const *argument) {
 
 					breaksStateTelem = sensors->payload[19];
 					breaksState = sensors->payload[19];
-					memcpy(raspTxBuf + CV_OFFSET, sensors->payload+PACK_HEADER_SIZE, CV_SIZE);
+					memcpy(raspTxBuf + CV_OFFSET, sensors->payload + PACK_HEADER_SIZE, CV_SIZE);
 					break;
 				}
 			}

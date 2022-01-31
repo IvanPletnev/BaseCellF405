@@ -20,14 +20,12 @@ void cvTask(void const * argument){
 	int16_t averageCurrent[3];
 	int16_t averageVoltage[3];
 	sensorsData *sensors;
-	static int16_t i;
 
 	ina219Init();
-	osDelay(50);
+	osDelay(200);
 
 	for(;;){
 
-		if (i++ < 10) {
 
 			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
 			}
@@ -47,28 +45,25 @@ void cvTask(void const * argument){
 			averageVoltage[1] = filtering(rawVoltage[1], &voltageFilter[1]);
 			averageVoltage[2] = filtering(rawVoltage[2], &voltageFilter[2]);
 
-			osDelay(600);
 
-			} else {
-				i = 0;
-				sensors = osMailAlloc(qSensorsHandle, 1);
-				sensors->source = CV_INA219_SOURCE;
-				sensors->size = CV_INA219_SIZE;
-				sensors->payload[0] = (uint8_t)((averageVoltage[0] & 0xFF00) >> 8);
-				sensors->payload[1] = (uint8_t)(averageVoltage[0] & 0x00FF);
-				sensors->payload[2] = (uint8_t)((averageVoltage[1] & 0xFF00) >> 8);
-				sensors->payload[3] = (uint8_t)(averageVoltage[1] & 0x00FF);
-				sensors->payload[4] = (uint8_t)((averageVoltage[2] & 0xFF00) >> 8);
-				sensors->payload[5] = (uint8_t)(averageVoltage[2] & 0x00FF);
-				sensors->payload[6] = (uint8_t)((averageCurrent[0] & 0xFF00) >> 8);
-				sensors->payload[7] = (uint8_t)(averageCurrent[0] & 0x00FF);
-				sensors->payload[8] = (uint8_t)((averageCurrent[1] & 0xFF00) >> 8);
-				sensors->payload[9] = (uint8_t)(averageCurrent[1] & 0x00FF);
-				sensors->payload[10] = (uint8_t)((averageCurrent[2] & 0xFF00) >> 8);
-				sensors->payload[11] = (uint8_t)(averageCurrent[2] & 0x00FF);
+			sensors = osMailAlloc(qSensorsHandle, 1);
+			sensors->source = CV_INA219_SOURCE;
+			sensors->size = CV_INA219_SIZE;
+			sensors->payload[0] = (uint8_t)((averageVoltage[0] & 0xFF00) >> 8);
+			sensors->payload[1] = (uint8_t)(averageVoltage[0] & 0x00FF);
+			sensors->payload[2] = (uint8_t)((averageVoltage[1] & 0xFF00) >> 8);
+			sensors->payload[3] = (uint8_t)(averageVoltage[1] & 0x00FF);
+			sensors->payload[4] = (uint8_t)((averageVoltage[2] & 0xFF00) >> 8);
+			sensors->payload[5] = (uint8_t)(averageVoltage[2] & 0x00FF);
+			sensors->payload[6] = (uint8_t)((averageCurrent[0] & 0xFF00) >> 8);
+			sensors->payload[7] = (uint8_t)(averageCurrent[0] & 0x00FF);
+			sensors->payload[8] = (uint8_t)((averageCurrent[1] & 0xFF00) >> 8);
+			sensors->payload[9] = (uint8_t)(averageCurrent[1] & 0x00FF);
+			sensors->payload[10] = (uint8_t)((averageCurrent[2] & 0xFF00) >> 8);
+			sensors->payload[11] = (uint8_t)(averageCurrent[2] & 0x00FF);
 
-				osMailPut(qSensorsHandle, sensors);
-			}
+			osMailPut(qSensorsHandle, sensors);
+			osDelay(300);
 
 		}
 }
