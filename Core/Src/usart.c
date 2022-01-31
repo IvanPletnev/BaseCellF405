@@ -399,6 +399,7 @@ void uartCommTask(void const *argument) {
 	sensorsData *sensors;
 	osEvent event, evt;
 //	uint8_t raspTxBuf[STD_PACK_SIZE];
+	uint8_t i = 0;
 
 	osDelay(200);
 
@@ -490,6 +491,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[2] = STD_PACK_SIZE;
 			raspTxBuf[GERCON_OFFSET] = gerconState;
 			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
+			raspTxBuf[BAT2_STATE_OFFSET] = 0x05;
 			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
@@ -504,6 +506,11 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
+
+			for (i = 0; i < STD_PACK_SIZE; i++) {
+				raspTxBuf[i] = 0;
+			}
+
 		}
 	}
 }
