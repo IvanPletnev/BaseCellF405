@@ -23,16 +23,13 @@ extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
-extern uint32_t osTickCounterOld;
 
 extern TIM_HandleTypeDef htim13;
-extern uint32_t osTickCounter;
 extern uint8_t wakeUpFlag;
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 
 uint8_t dimmingTime = 0x32;
-uint8_t engineSwitchFlag = 0;
 
 usartErrT usartError = 0;
 
@@ -94,9 +91,6 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 			case RASP_RESP_PACK_ID:
 				sensors->source = CV_RESP_SOURCE;
-//				if (currentVoltageRxBuf[3] == CMD_PWR_OFF){
-//					osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
-//				}
 				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 				HAL_TIM_Base_Stop_IT(&htim13);
 				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -119,10 +113,6 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 		memcpy (sensors->payload, raspRxBuf, sensors->size);
 		osMailPut(qSensorsHandle, sensors);
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
-//		if (get_check_sum(raspRxBuf, size) != raspRxBuf[size - 3]) {
-//			sendRespToRasp(0, RESPONSE_ERROR);
-//			return;
-//		}
 	}
 }
 
@@ -409,8 +399,6 @@ void uartCommTask(void const *argument) {
 	sensorsData *sensors;
 	osEvent event, evt;
 //	uint8_t raspTxBuf[STD_PACK_SIZE];
-
-//	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
 

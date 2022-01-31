@@ -112,15 +112,10 @@ uint16_t cvRequestCounter = 0;
 uint8_t gerconState = 0;
 uint8_t wakeUpState = 0;
 
-uint32_t osTickCounter = 0;
-uint32_t osTickCounterOld = 0;
 uint32_t raspOffTimeoutCounter = 0;
 uint32_t raspOffCounter = 0;
-uint16_t raspOnCounter = 0;
-uint8_t raspOnFlag = 0;
 uint16_t stateChangeCounter = 0;
 uint8_t raspOffState = 0;
-uint8_t timeOutFlag = 0;
 
 uint16_t wakeUpPinCounter = 0;
 uint16_t wakeUpOffCounter = 0;
@@ -131,7 +126,6 @@ uint32_t secondCounter = 0;
 uint16_t pulseDuration = 0;
 const uint8_t cvTimeoutResponse[8] = {0xAA, 0x0F, 0x08, 0x11, 0x01, 0, 0, 0x55};
 
-extern uint8_t engineSwitchFlag;
 extern uint16_t onBoardVoltage;
 extern uint16_t bat1Voltage;
 extern uint16_t bat2Voltage;
@@ -1011,32 +1005,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
-//	if (GPIO_Pin == GPIO_PIN_0) {
-//		osSignalSet(defaultTaskHandle, CV_EXT_INTERRUPT_ID);
-//	}
 	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
 	}
 
-//	switch (pulseState) {
-//	case 0:
-//		if (GPIO_Pin == GPIO_PIN_12) {
-//			__HAL_TIM_CLEAR_IT(&htim14, TIM_IT_UPDATE);
-//			__HAL_TIM_SET_COUNTER(&htim14, 0);
-//			HAL_TIM_Base_Start_IT(&htim14);
-//
-//			pulseState++;
-//		}
-//		break;
-//	case 1:
-//		if (GPIO_Pin == GPIO_PIN_12) {
-//			HAL_TIM_Base_Stop_IT(&htim14);
-//			pulseDuration = __HAL_TIM_GET_COUNTER(&htim14);
-//			__HAL_TIM_SET_COUNTER(&htim14, 0);
-//			HAL_TIM_Base_Start_IT(&htim14);
-//		}
-//		break;
-//	}
 }
 /* USER CODE END 4 */
 
@@ -1269,7 +1241,7 @@ __weak void uartCommTask(void const * argument)
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-	sensorsData *sensor, *sensor1;
+	sensorsData  *sensor1;
 	uint8_t request[6] = { PACKET_HEADER, CV_REQ_PACK_ID, CV_REQ_SIZE,
 			CMD_CV_REQUEST, 0, PACKET_FOOTER };
 	request[4] = get_check_sum(request, 6);
@@ -1290,11 +1262,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 		} else {
 			cvRequestCounter = 0;
-//			sensor = osMailAlloc(qSensorsHandle, 0);
-//			sensor->source = CV_REQ_SOURCE;
-//			sensor->size = CV_REQ_SIZE;
-//			memcpy(sensor->payload, request, CV_REQ_SIZE);
-//			osMailPut(qSensorsHandle, sensor);
 
 			if (engineState == ENGINE_STOPPED)  {
 				if (!breaksStateTelem){
@@ -1329,15 +1296,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffCounter = 0;
 				HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
 				raspOffState++;
-//				sensor = osMailAlloc(qSensorsHandle, 0);
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_PWR_ON;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
 			}
 		} else {
 			raspOffCounter = 0;
@@ -1352,16 +1310,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				raspOffCounter = 0;
 				HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
-//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_BACKLIGHT_OFF;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
-//				osMailPut(qSensorsHandle, sensor);
 				raspOffState++;
 			}
 		} else {
@@ -1381,17 +1329,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				}
 			} else {
 				raspOffCounter = 0;
-//				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
-//				sensor->source = RASP_UART_SRC;
-//				sensor->size = CV_REQ_SIZE;
-//				sensor->payload[0] = 0xAA;
-//				sensor->payload[1] = RASP_IN_PACK_ID;
-//				sensor->payload[2] = CV_REQ_SIZE;
-//				sensor->payload[3] = CMD_PWR_OFF;
-//				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-//				sensor->payload[5] = 0x55;
-//				allConsumersDisable();
-//				osMailPut(qSensorsHandle, sensor);
 				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 				raspOffState = 0;
 			}
@@ -1411,36 +1348,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /*------------------------------------------------------------------------------------------*/
 	
-//	  switch (gerconState){
-//
-//	  case 0:
-//		  if (!HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 50){
-// 				  gerconCounter++;
-//			  } else {
-//				  gerconCounter = 0;
-////				  HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-//				  gerconState++;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//
-//	  case 1:
-//		  if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
-//			  if (gerconCounter < 500){
-//				  gerconCounter++;
-//			  } else {
-////				  HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-//				  gerconCounter = 0;
-//				  gerconState = 0;
-//			  }
-//		  } else {
-//			  gerconCounter = 0;
-//		  }
-//		  break;
-//	  }
 
 	if (HAL_GPIO_ReadPin(GERCON_GPIO_Port, GERCON_Pin)){
 
