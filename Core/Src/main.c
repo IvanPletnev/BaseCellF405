@@ -245,7 +245,7 @@ int main(void)
   /* definition and creation of I2C2Mutex */
   osMutexDef(I2C2Mutex);
   I2C2MutexHandle = osMutexCreate(osMutex(I2C2Mutex));
-
+  
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -994,7 +994,7 @@ void setRxMode (uint8_t uartNo){
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-	uint8_t i  =0;
+//	uint8_t i  =0;
 
 	if (huart->Instance == USART2) {
 		setRxMode(2);
@@ -1116,7 +1116,7 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+			sensors = osMailAlloc(qSensorsHandle, 100);
 			sensors->source = ADXL_TASK;
 			sensors->size = ADXL_SIZE;
 			memcpy (sensors->payload, buffer, 6);
@@ -1210,7 +1210,7 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+		sensors = osMailAlloc(qSensorsHandle, 10);
 		sensors->source = TLA2024_TASK_SOURCE;
 		sensors->size = TLA2024_SIZE;
 		memset(sensors->payload, 0, 16);
