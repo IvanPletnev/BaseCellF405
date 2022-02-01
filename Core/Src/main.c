@@ -134,6 +134,7 @@ extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByte;
 extern uint8_t breaksStateTelem;
+extern uint8_t raspTxBuf[STD_PACK_SIZE];
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -993,6 +994,7 @@ void setRxMode (uint8_t uartNo){
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+	uint8_t i  =0;
 
 	if (huart->Instance == USART2) {
 		setRxMode(2);
@@ -1000,6 +1002,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart->Instance == USART6) {
 		setRxMode(6);
 	}
+//	if (huart->Instance == USART1) {
+//		for (i = 0; i < STD_PACK_SIZE; i++) {
+//			raspTxBuf[i] = 0;
+//		}
+//	}
 }
 
 

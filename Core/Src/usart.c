@@ -507,11 +507,6 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
-
-			for (i = 0; i < STD_PACK_SIZE; i++) {
-				raspTxBuf[i] = 0;
-			}
-
 		}
 	}
 }

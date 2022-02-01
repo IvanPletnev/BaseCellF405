@@ -10,15 +10,17 @@
 #include "utilites.h"
 #include "cmsis_os.h"
 
+int16_t rawCurrent[3];
+int16_t rawVoltage[3];
+int16_t averageCurrent[3];
+int16_t averageVoltage[3];
+
 extern osMutexId I2C2MutexHandle;
 extern osMailQId qSensorsHandle;
 
 void cvTask(void const * argument){
 
-	int16_t rawCurrent[3];
-	int16_t rawVoltage[3];
-	int16_t averageCurrent[3];
-	int16_t averageVoltage[3];
+
 	sensorsData *sensors;
 
 	ina219Init();
