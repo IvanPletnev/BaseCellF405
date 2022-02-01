@@ -296,7 +296,7 @@ int main(void)
   uartCommHandle = osThreadCreate(osThread(uartComm), NULL);
 
   /* definition and creation of cvMeas */
-  osThreadDef(cvMeas, cvTask, osPriorityNormal, 0, 128);
+  osThreadDef(cvMeas, cvTask, osPriorityAboveNormal, 0, 256);
   cvMeasHandle = osThreadCreate(osThread(cvMeas), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

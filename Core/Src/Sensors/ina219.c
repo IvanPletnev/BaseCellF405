@@ -31,7 +31,7 @@ extern I2C_HandleTypeDef hi2c2;
 
 uint32_t ina219CurrentDivider_mA;
 uint32_t ina219PowerDivider_mW;
-static uint8_t sensors[3] = {INA219_ADDRESS_1, INA219_ADDRESS_2, INA219_ADDRESS_3};
+static uint8_t sensors[3] = {INA219_ADDRESS_2, INA219_ADDRESS_3, INA219_ADDRESS_1,};
 int16_t rawVoltage[3];
 int16_t rawCurrent[3];
 float fVoltage[3];
