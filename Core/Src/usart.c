@@ -399,7 +399,7 @@ void uartCommTask(void const *argument) {
 	sensorsData *sensors;
 	osEvent event, evt;
 //	uint8_t raspTxBuf[STD_PACK_SIZE];
-	uint8_t i = 0;
+//	uint8_t i = 0;
 
 	osDelay(200);
 
