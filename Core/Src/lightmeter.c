@@ -231,6 +231,6 @@ void lightMeterTask(void const * argument) {
 		}
 		osMailPut(qSensorsHandle, autoBlQueue);
 
-		osDelay(1000);
+		osDelay(500);
 	}
 }

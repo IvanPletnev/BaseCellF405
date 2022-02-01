@@ -21,7 +21,7 @@
 /**************************************************************************/
 
 #include "ina219.h"
-
+#include "cmsis_os.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
@@ -48,8 +48,11 @@ void ina219Init(void) {
 	ina219CurrentDivider_mA = 0;
 	ina219PowerDivider_mW = 0;
 	ina219SetCalibration_16V_80A_075mOhm(0);
+	osDelay(10);
 	ina219SetCalibration_16V_80A_075mOhm(1);
+	osDelay(10);
 	ina219SetCalibration_16V_80A_05mOhm(2);
+	osDelay(10);
 }
 
 /**************************************************************************/

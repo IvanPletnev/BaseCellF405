@@ -26,8 +26,7 @@ void cvTask(void const * argument){
 
 	for(;;){
 
-
-			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
+			if (osMutexWait(I2C2MutexHandle, 200) != osOK){
 			}
 			rawCurrent[0] = ina219GetCurrent_raw(0); // ток потребления бортовой сети. отрицательное значение
 			rawCurrent[1] = ina219GetCurrent_raw(1); // ток первого аккумулятора. "+" зарядка, "-" потребление
@@ -64,6 +63,5 @@ void cvTask(void const * argument){
 
 			osMailPut(qSensorsHandle, sensors);
 			osDelay(300);
-
 		}
 }

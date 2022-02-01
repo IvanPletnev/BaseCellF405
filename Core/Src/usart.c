@@ -492,6 +492,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[GERCON_OFFSET] = gerconState;
 			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
 			raspTxBuf[BAT2_STATE_OFFSET] = 0x05;
+			raspTxBuf[BAT2_ERR_OFFSET] = 0x05;
 			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
