@@ -14,8 +14,8 @@ extern osMailQId qSensorsHandle;
 uint8_t lightMeterStatusByte = 0;
 
 
-//uint16_t debugLightLevel0 = 0;
-//uint16_t debugLightLevel1 = 0;
+uint16_t debugLightLevel0 = 0;
+uint16_t debugLightLevel1 = 0;
 
 uint8_t mpxControlReg = 0;
 uint8_t mpxControlReg1 = 0;
@@ -153,8 +153,8 @@ void lightMeterTask(void const * argument) {
 
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
-//		debugLightLevel0 = lightLevel;
-//		debugLightLevel1 = lightLevel1;
+		debugLightLevel0 = lightLevel;
+		debugLightLevel1 = lightLevel1;
 
 		APDS9960_SetActiveChan(0);
 		sensorReadDataByte(APDS9960_ATIME, &aTime0);
