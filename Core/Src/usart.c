@@ -49,8 +49,8 @@ uint8_t misStatusByte1 = 0;
 
 uint8_t cvStatusByteExtern = 0;
 
-uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 30;
+uint8_t misFirmwareVersion0 = 8;
+uint8_t misFirmwareVersion1 = 3;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
