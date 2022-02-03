@@ -132,6 +132,7 @@ extern uint8_t breaksStateTelem;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
+uint8_t sensorsOnFlag = 1;
 
 volatile unsigned long ulHighFrequencyTimerTicks;
 
@@ -355,7 +356,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -966,6 +967,7 @@ void setRxMode (uint8_t uartNo){
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
+//	uint8_t i  =0;
 
 	if (huart->Instance == USART2) {
 		setRxMode(2);
@@ -973,6 +975,11 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart->Instance == USART6) {
 		setRxMode(6);
 	}
+//	if (huart->Instance == USART1) {
+//		for (i = 0; i < STD_PACK_SIZE; i++) {
+//			raspTxBuf[i] = 0;
+//		}
+//	}
 }
 
 
@@ -1079,7 +1086,7 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+			sensors = osMailAlloc(qSensorsHandle, 100);
 			sensors->source = ADXL_TASK;
 			sensors->size = ADXL_SIZE;
 			memcpy (sensors->payload, buffer, 6);
@@ -1173,7 +1180,7 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-		sensors = osMailAlloc(qSensorsHandle, osWaitForever);
+		sensors = osMailAlloc(qSensorsHandle, 10);
 		sensors->source = TLA2024_TASK_SOURCE;
 		sensors->size = TLA2024_SIZE;
 		memset(sensors->payload, 0, 16);
@@ -1181,6 +1188,13 @@ void tempMeasTask(void const * argument)
 		memcpy (sensors->payload+2, buffer1, 2);
 		memcpy (sensors->payload+4, buffer2, 2);
 		osMailPut(qSensorsHandle, sensors);
+
+		if (sensorsOnFlag) {
+			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
+		} else {
+			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
+		}
+
 		osDelay(500);
 	}
   /* USER CODE END tempMeasTask */

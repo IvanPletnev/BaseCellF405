@@ -134,6 +134,10 @@ uint8_t setGestureWaitTime(uint8_t time);
 uint8_t getGestureMode(void);
 uint8_t setGestureMode(uint8_t mode);
 
+
+
+
+
 /* Members */
 gesture_data_type gesture_data_;
 int gesture_ud_delta_;
@@ -148,8 +152,6 @@ int gesture_motion_;
 uint8_t mpx_reg[2] = { MPX_CHAN_0, MPX_CHAN_1 };
 uint8_t apds9960_id[2] = { 0, 0 }, nAPDS9960 = 0;
 
-uint8_t ddd;
-uint16_t ttmp;
 
 uint8_t APDS9960_Init(void) {
 	uint8_t i = 0;
@@ -197,17 +199,11 @@ uint8_t APDS9960_Init(void) {
 }
 
 uint8_t mpxPowerOn(void) {
-	uint8_t retValue = 0;
-	retValue = mpxSetReg(MPX_PWR_ON);
-	osDelay(1);
-	return retValue;
+	return mpxSetReg(MPX_PWR_ON);
 }
 
 uint8_t APDS9960_SetActiveChan(uint8_t n_chan) {
-	uint8_t retValue = 0;
-	retValue = mpxSetReg(mpx_reg[n_chan]);
-	osDelay(1);
-	return retValue;
+	return mpxSetReg(mpx_reg[n_chan]);
 }
 
 /**
@@ -250,7 +246,6 @@ uint8_t init(void) {
 	if (!setAmbientLightGain(DEFAULT_AGAIN)) {
 		return STATUS_FAIL;
 	}
-
 	if (!setProxIntLowThresh(DEFAULT_PILT)) {
 		return STATUS_FAIL;
 	}
@@ -787,28 +782,6 @@ uint8_t APDS9960_ReadLight(uint8_t nSensor, uint8_t *dest) {
 	return STATUS_OK;
 }
 
-//uint8_t APDS9960_ReadClrTemp(uint8_t nSensor, uint8_t nClr) {
-//	uint8_t ret_val;
-//
-//	switch (nClr) {
-//	case 'R': {
-//		ret_val = APDS9960_ReadRedLight(nSensor);
-//		break;
-//	}
-//
-//	case 'G': {
-//		ret_val = APDS9960_ReadGreenLight(nSensor);
-//		break;
-//	}
-//
-//	case 'B': {
-//		ret_val = APDS9960_ReadBlueLight(nSensor);
-//		break;
-//	}
-//	}
-//
-//	return ret_val;
-//}
 
 /**
  * @brief Reads the red light level as a 16-bit value
@@ -2230,7 +2203,7 @@ uint8_t setGestureMode(uint8_t mode) {
  * @param  return Write state,Write success is 1,Write fail is 0
  **********************************************************************************************/
 uint8_t mpxSetReg(uint8_t Register_Addr) {
-	if (HAL_I2C_Master_Transmit(&hi2c1, MPX_I2C_ADDR, &Register_Addr, 1, 50)
+	if (HAL_I2C_Master_Transmit(&hi2c1, MPX_I2C_ADDR, &Register_Addr, 1, 5)
 			== HAL_OK)
 		return STATUS_OK;
 	else
@@ -2238,7 +2211,7 @@ uint8_t mpxSetReg(uint8_t Register_Addr) {
 }
 
 uint8_t mpxGetReg(uint8_t Register_Addr, uint8_t data) {
-	if (HAL_I2C_Master_Receive(&hi2c1, MPX_I2C_ADDR, &data, 1, 50)
+	if (HAL_I2C_Master_Receive(&hi2c1, MPX_I2C_ADDR, &data, 1, 5)
 			== HAL_OK)
 		return STATUS_OK;
 	else
@@ -2253,7 +2226,7 @@ uint8_t mpxGetReg(uint8_t Register_Addr, uint8_t data) {
  **********************************************************************************************/
 uint8_t sensorWriteDataByte(uint16_t Register_Addr, uint8_t Register_Data) {
 	if (HAL_I2C_Mem_Write(&hi2c1, APDS9960_I2C_ADDR, Register_Addr,
-			I2C_MEMADD_SIZE_8BIT, &Register_Data, 1, 50) == HAL_OK)
+			I2C_MEMADD_SIZE_8BIT, &Register_Data, 1, 5) == HAL_OK)
 		return STATUS_OK;
 	else
 		return STATUS_FAIL;
@@ -2267,13 +2240,11 @@ uint8_t sensorWriteDataByte(uint16_t Register_Addr, uint8_t Register_Data) {
  **********************************************************************************************/
 uint8_t sensorReadDataByte(uint16_t Register_Addr, uint8_t *Register_Data) {
 	if (HAL_I2C_Mem_Read(&hi2c1, APDS9960_I2C_ADDR, Register_Addr,
-			I2C_MEMADD_SIZE_8BIT, Register_Data, 1, 50) == HAL_OK) {
-		ddd = Register_Data[0];
+			I2C_MEMADD_SIZE_8BIT, Register_Data, 1, 5) == HAL_OK) {
 		return STATUS_OK;
 	}
 
 	else {
-		ddd = Register_Data[0];
 		return STATUS_FAIL;
 	}
 
@@ -2288,7 +2259,7 @@ uint8_t sensorReadDataByte(uint16_t Register_Addr, uint8_t *Register_Data) {
 uint8_t sensorReadDataBlock(uint16_t Register_Addr, uint8_t *Register_Data,
 		uint16_t Size) {
 	if (HAL_I2C_Mem_Read(&hi2c1, APDS9960_I2C_ADDR, Register_Addr,
-			I2C_MEMADD_SIZE_8BIT, Register_Data, Size, 50) == HAL_OK)
+			I2C_MEMADD_SIZE_8BIT, Register_Data, Size, 10) == HAL_OK)
 		return STATUS_OK;
 	else
 		return STATUS_FAIL;
