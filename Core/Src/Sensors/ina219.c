@@ -22,6 +22,7 @@
 
 #include "ina219.h"
 #include "cmsis_os.h"
+#include "apds9960.h"
 
 extern I2C_HandleTypeDef hi2c1;
 extern I2C_HandleTypeDef hi2c2;
@@ -60,15 +61,16 @@ void ina219Init(void) {
  @brief  Sends a single command byte over I2C
  */
 /**************************************************************************/
-void ina219WriteRegister(uint8_t nSensor, uint8_t reg, uint16_t value) {
+uint8_t ina219WriteRegister(uint8_t nSensor, uint8_t reg, uint16_t value) {
 	uint8_t txbuf[3];
 	txbuf[0] = reg;
 	txbuf[1] = ((value >> 8) & 0xFF);
 	txbuf[2] = (value & 0xFF);
 
-	HAL_I2C_Master_Transmit(INA_DRIVER, sensors[nSensor]<<1, txbuf, 3, 100);
-	while (HAL_I2C_GetState(INA_DRIVER) != HAL_I2C_STATE_READY){
+	if (HAL_I2C_Master_Transmit(INA_DRIVER, sensors[nSensor]<<1, txbuf, 3, 10) != HAL_OK ){
+		return STATUS_FAIL;
 	}
+	return STATUS_OK;
 }
 
 /**************************************************************************/
@@ -76,19 +78,23 @@ void ina219WriteRegister(uint8_t nSensor, uint8_t reg, uint16_t value) {
  @brief  Reads a 16 bit values over I2C
  */
 /**************************************************************************/
-void ina219ReadRegister(uint8_t nSensor, uint8_t reg, uint16_t *value) {
+uint8_t ina219ReadRegister(uint8_t nSensor, uint8_t reg, uint16_t *value) {
 	uint8_t rxbuf[2], txbuf[2];
 	rxbuf[0] = 0;
 	rxbuf[1] = 0;
 	txbuf[0] = reg;
 	txbuf[1] = 0;
-	HAL_I2C_Master_Transmit(INA_DRIVER, sensors[nSensor]<<1, txbuf, 1, 100);
-	HAL_I2C_Master_Receive(INA_DRIVER, sensors[nSensor]<<1, rxbuf, 2, 100);
+	if (HAL_I2C_Master_Transmit(INA_DRIVER, sensors[nSensor]<<1, txbuf, 1, 10) != HAL_OK){
+		return STATUS_FAIL;
+	}
+	if (HAL_I2C_Master_Receive(INA_DRIVER, sensors[nSensor]<<1, rxbuf, 2, 10) != HAL_OK) {
+		return STATUS_FAIL;
+	}
 	while (HAL_I2C_GetState(INA_DRIVER) != HAL_I2C_STATE_READY){
 	}
 
 	*value = (((uint16_t) rxbuf[0]) << 8) | rxbuf[1];
-
+	return STATUS_OK;
 }
 
 /**************************************************************************/

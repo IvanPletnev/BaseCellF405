@@ -26,6 +26,7 @@ extern TIM_HandleTypeDef htim7;
 
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
+extern uint8_t lightMeterStatusByte;
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 
@@ -503,6 +504,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
 			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = lightMeterStatusByte;
 			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 

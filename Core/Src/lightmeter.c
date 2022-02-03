@@ -184,14 +184,6 @@ void lightMeterTask(void const * argument) {
 			if(++counter >= 5) {
 				counter = 0;
 				lightMeterStatusByte |= 0x04;
-				APDS9960_SetActiveChan(0);
-				disableLightSensor();
-				disablePower();
-				osDelay(100);
-				enablePower();
-				init();
-				osDelay(200);
-
 			}
 		}
 
@@ -199,16 +191,8 @@ void lightMeterTask(void const * argument) {
 			if(++counter1 >= 5) {
 				counter1 = 0;
 				lightMeterStatusByte |= 0x08;
-				APDS9960_SetActiveChan(1);
-				disableLightSensor();
-				disablePower();
-				osDelay(100);
-				enablePower();
-				init();
-				osDelay(200);
 			}
 		}
-
 
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
 		lightSumFiltered = filtering(lightSum, &currentFilter[0]);
