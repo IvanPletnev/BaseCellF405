@@ -14,8 +14,8 @@ extern osMailQId qSensorsHandle;
 uint8_t lightMeterStatusByte = 0;
 
 
-//uint16_t debugLightLevel0 = 0;
-//uint16_t debugLightLevel1 = 0;
+uint16_t debugLightLevel0 = 0;
+uint16_t debugLightLevel1 = 0;
 
 uint8_t mpxControlReg = 0;
 uint8_t mpxControlReg1 = 0;
@@ -105,8 +105,8 @@ void lightMeterTask(void const * argument) {
 	// Потеря инициализации датчик 0, reinit				|	1				   (0x10)
 	// Потеря инициализации датчик 1, reinit				1					   (0x20)
 
-	uint8_t light0[2];
-	uint8_t light1[2];
+	uint8_t light0[2] = {0};
+	uint8_t light1[2] = {0};
 	uint8_t red0[2];
 	uint8_t red1[2];
 	uint8_t green0[2];
@@ -135,10 +135,26 @@ void lightMeterTask(void const * argument) {
 
 		if(!APDS9960_ReadLight(0, light0)){
 			lightMeterStatusByte |= 0x01;
+			light0[0] = 0;
+			light0[1] = 0;
+			red0[0] = 0;
+			red0[1] = 0;
+			green0[0] = 0;
+			green0[1] = 0;
+			blue0[0] = 0;
+			blue0[1] = 0;
 		}
 
 		if (!APDS9960_ReadLight(1, light1)){
 			lightMeterStatusByte |= 0x02;
+			light1[0] = 0;
+			light1[1] = 0;
+			red1[0] = 0;
+			red1[1] = 0;
+			green1[0] = 0;
+			green1[1] = 0;
+			blue1[0] = 0;
+			blue1[1] = 0;
 		}
 
 		APDS9960_ReadRedLight(0, red0);
@@ -153,8 +169,8 @@ void lightMeterTask(void const * argument) {
 
 		lightLevel1 = (uint16_t)light1[0] << 8;
 		lightLevel1 |= light1[1];
-//		debugLightLevel0 = lightLevel;
-//		debugLightLevel1 = lightLevel1;
+		debugLightLevel0 = lightLevel;
+		debugLightLevel1 = lightLevel1;
 
 		APDS9960_SetActiveChan(0);
 		sensorReadDataByte(APDS9960_ATIME, &aTime0);
@@ -184,14 +200,6 @@ void lightMeterTask(void const * argument) {
 			if(++counter >= 5) {
 				counter = 0;
 				lightMeterStatusByte |= 0x04;
-				APDS9960_SetActiveChan(0);
-				disableLightSensor();
-				disablePower();
-				osDelay(100);
-				enablePower();
-				init();
-				osDelay(200);
-
 			}
 		}
 
@@ -199,16 +207,8 @@ void lightMeterTask(void const * argument) {
 			if(++counter1 >= 5) {
 				counter1 = 0;
 				lightMeterStatusByte |= 0x08;
-				APDS9960_SetActiveChan(1);
-				disableLightSensor();
-				disablePower();
-				osDelay(100);
-				enablePower();
-				init();
-				osDelay(200);
 			}
 		}
-
 
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
 		lightSumFiltered = filtering(lightSum, &currentFilter[0]);
@@ -231,6 +231,6 @@ void lightMeterTask(void const * argument) {
 		}
 		osMailPut(qSensorsHandle, autoBlQueue);
 
-		osDelay(1000);
+		osDelay(500);
 	}
 }

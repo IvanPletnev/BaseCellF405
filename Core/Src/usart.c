@@ -433,16 +433,6 @@ void uartCommTask(void const *argument) {
 
 			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
 
-//				if (sensors->payload[4] == 1){ //Если сработал таймаут, то есть ответ от SorceSelector не получен,
-//					destTempBuf[0] = 0xAA; destTempBuf[1] = CV_REQ_PACK_ID; destTempBuf[2] = CV_REQ_SIZE;
-//					destTempBuf[3] = sensors->payload[3]; destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE); destTempBuf[5] = 0x55;
-//					osDelay(50);
-//					setTxMode(6);
-//					HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE); //Отправляем повторную команду CMD_PWR_OFF в SourceSelector
-//					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
-//					__HAL_TIM_SET_COUNTER(&htim13, 0);
-//					HAL_TIM_Base_Start_IT(&htim13);
-//				}
 				HAL_UART_Transmit_DMA(&huart1, sensors->payload, sensors->size);//транслируем в Raspberry
 
 			} else{
