@@ -105,8 +105,8 @@ void lightMeterTask(void const * argument) {
 	// Потеря инициализации датчик 0, reinit				|	1				   (0x10)
 	// Потеря инициализации датчик 1, reinit				1					   (0x20)
 
-	uint8_t light0[2];
-	uint8_t light1[2];
+	uint8_t light0[2] = {0};
+	uint8_t light1[2] = {0};
 	uint8_t red0[2];
 	uint8_t red1[2];
 	uint8_t green0[2];
