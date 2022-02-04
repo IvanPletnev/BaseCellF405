@@ -58,10 +58,11 @@ uint8_t cvFirmwareVersion0 = 0;
 uint8_t cvFirmwareVersion1 = 0;
 
 uint8_t misFirmwareVersion0 = 7;
-uint8_t misFirmwareVersion1 = 12;
+uint8_t misFirmwareVersion1 = 14;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
+extern uint8_t wakeUpState;
 
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
@@ -498,7 +499,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
 			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
+			raspTxBuf[DISCR_INPUT_OFFSET] = wakeUpState;
 			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
 			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
