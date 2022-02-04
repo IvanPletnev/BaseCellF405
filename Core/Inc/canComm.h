@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "cmsis_os.h"
+#include "CANSPI.h"
 
 void canRxTask(void const * argument);
 void canTxTask(void const * argument);

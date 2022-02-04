@@ -3,6 +3,7 @@
 
 #include "stm32f4xx_hal.h"
 #include "stdbool.h"
+#include "MCP2515.h"
 
 typedef union {
   struct {
