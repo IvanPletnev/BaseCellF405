@@ -1269,6 +1269,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			tickCounter = 0;
 			osSignalSet(uartCommHandle, 0x02);
+			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
 		}
 
 /*------------------------------------------------------------------------------------------*/
