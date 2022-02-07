@@ -555,7 +555,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
 			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksState;
+			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
 			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
 			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
