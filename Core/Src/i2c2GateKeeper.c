@@ -5,8 +5,8 @@
  *      Author: ivan
  */
 
+#include <i2c2gatekeeper.h>
 #include "main.h"
-#include "current_voltage.h"
 #include "utilites.h"
 #include "cmsis_os.h"
 #include "apds9960.h"
@@ -21,7 +21,7 @@ int16_t averageVoltage[3];
 extern osMutexId I2C2MutexHandle;
 extern osMailQId qSensorsHandle;
 
-void cvTask(void const * argument){
+void i2c2task(void const * argument){
 
 
 	sensorsData *sensors;
@@ -70,12 +70,6 @@ void cvTask(void const * argument){
 				rawCurrent[2] = 0;
 				rawVoltage[2] = 0;
 			}
-
-
-
-
-
-
 
 			osMutexRelease(I2C2MutexHandle);
 

@@ -5,9 +5,9 @@
  *      Author: ivan
  */
 
-#ifndef INC_CURRENT_VOLTAGE_H_
-#define INC_CURRENT_VOLTAGE_H_
+#ifndef INC_I2C2GATEKEEPER_H_
+#define INC_I2C2GATEKEEPER_H_
 
 #include "ina219.h"
 
-#endif /* INC_CURRENT_VOLTAGE_H_ */
+#endif /* INC_I2C2GATEKEEPER_H_ */

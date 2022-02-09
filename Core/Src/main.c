@@ -81,10 +81,9 @@ DMA_HandleTypeDef hdma_usart6_tx;
 
 osThreadId defaultTaskHandle;
 osThreadId lightMeterHandle;
-osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
-osThreadId cvMeasHandle;
+osThreadId i2c2GatekeeperHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
@@ -166,10 +165,9 @@ static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
 void StartDefaultTask(void const * argument);
 void lightMeterTask(void const * argument);
-void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
-extern void cvTask(void const * argument);
+extern void i2c2task(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -285,10 +283,6 @@ int main(void)
   osThreadDef(lightMeter, lightMeterTask, osPriorityNormal, 0, 256);
   lightMeterHandle = osThreadCreate(osThread(lightMeter), NULL);
 
-  /* definition and creation of accel */
-  osThreadDef(accel, accelTask, osPriorityNormal, 0, 256);
-  accelHandle = osThreadCreate(osThread(accel), NULL);
-
   /* definition and creation of tempMeas */
   osThreadDef(tempMeas, tempMeasTask, osPriorityNormal, 0, 256);
   tempMeasHandle = osThreadCreate(osThread(tempMeas), NULL);
@@ -297,9 +291,9 @@ int main(void)
   osThreadDef(uartComm, uartCommTask, osPriorityNormal, 0, 256);
   uartCommHandle = osThreadCreate(osThread(uartComm), NULL);
 
-  /* definition and creation of cvMeas */
-  osThreadDef(cvMeas, cvTask, osPriorityAboveNormal, 0, 256);
-  cvMeasHandle = osThreadCreate(osThread(cvMeas), NULL);
+  /* definition and creation of i2c2Gatekeeper */
+  osThreadDef(i2c2Gatekeeper, i2c2task, osPriorityAboveNormal, 0, 256);
+  i2c2GatekeeperHandle = osThreadCreate(osThread(i2c2Gatekeeper), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -1015,7 +1009,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	if (GPIO_Pin == GPIO_PIN_4) {
-		osSignalSet(accelHandle, 0x01);
+//		osSignalSet(accelHandle, 0x01);
 	}
 
 }
@@ -1077,55 +1071,6 @@ __weak void lightMeterTask(void const * argument)
   /* Infinite loop */
 
   /* USER CODE END lightMeterTask */
-}
-
-/* USER CODE BEGIN Header_accelTask */
-/**
-* @brief Function implementing the accel thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_accelTask */
-void accelTask(void const * argument)
-{
-  /* USER CODE BEGIN accelTask */
-
-	osEvent evt;
-	uint8_t buffer[6];
-	sensorsData *sensors = {0};
-//	osDelay(1000);
-	HAL_I2C_Init(&hi2c2);
-	ADXL345_Init();
-
-	/* Infinite loop */
-	for (;;) {
-		evt = osSignalWait(0x01, osWaitForever);
-		if (evt.status == osEventSignal) {
-			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
-			}
-			intSource = getInterruptSource();
-			ADXL345_Read(buffer);
-			osMutexRelease(I2C2MutexHandle);
-			accelX =(int16_t) buffer[1] << 8;
-			accelX |=(int16_t) buffer[0];
-			Xresult = (float)accelX * 0.0156;
-			accelY = (int16_t) buffer[3] << 8;
-			accelY |= (int16_t)buffer[2];
-			Yresult = (float)accelY * 0.0156;
-			accelZ = (int16_t)buffer[5] << 8;
-			accelZ |= (int16_t)buffer[4];
-			Zresult = (float)accelZ * 0.0156;
-			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
-			osDelay(200);
-			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			sensors = osMailAlloc(qSensorsHandle, 100);
-			sensors->source = ADXL_TASK;
-			sensors->size = ADXL_SIZE;
-			memcpy (sensors->payload, buffer, 6);
-			osMailPut(qSensorsHandle, sensors);
-		}
-	}
-  /* USER CODE END accelTask */
 }
 
 /* USER CODE BEGIN Header_tempMeasTask */
