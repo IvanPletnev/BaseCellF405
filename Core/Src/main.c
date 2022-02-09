@@ -145,6 +145,9 @@ int16_t debugTemp0;
 int16_t debugTemp1;
 int16_t debugTemp2;
 
+osStatus tempMutexStatus0;
+osStatus tempMutexStatus1;
+
 uint8_t sensorsOnFlag = 1;
 
 /* USER CODE END PV */
@@ -1090,40 +1093,40 @@ void accelTask(void const * argument)
 {
   /* USER CODE BEGIN accelTask */
 
-	osEvent evt;
-	uint8_t buffer[6];
-	sensorsData *sensors = {0};
+//	osEvent evt;
+//	uint8_t buffer[6];
+//	sensorsData *sensors = {0};
 //	osDelay(1000);
-	HAL_I2C_Init(&hi2c2);
-	ADXL345_Init();
+//	HAL_I2C_Init(&hi2c2);
+//	ADXL345_Init();
 
 	/* Infinite loop */
 	for (;;) {
-		evt = osSignalWait(0x01, osWaitForever);
-		if (evt.status == osEventSignal) {
-			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
-			}
-			intSource = getInterruptSource();
-			ADXL345_Read(buffer);
-			osMutexRelease(I2C2MutexHandle);
-			accelX =(int16_t) buffer[1] << 8;
-			accelX |=(int16_t) buffer[0];
-			Xresult = (float)accelX * 0.0156;
-			accelY = (int16_t) buffer[3] << 8;
-			accelY |= (int16_t)buffer[2];
-			Yresult = (float)accelY * 0.0156;
-			accelZ = (int16_t)buffer[5] << 8;
-			accelZ |= (int16_t)buffer[4];
-			Zresult = (float)accelZ * 0.0156;
-			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
+//		evt = osSignalWait(0x01, osWaitForever);
+//		if (evt.status == osEventSignal) {
+//			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
+//			}
+//			intSource = getInterruptSource();
+//			ADXL345_Read(buffer);
+//			osMutexRelease(I2C2MutexHandle);
+//			accelX =(int16_t) buffer[1] << 8;
+//			accelX |=(int16_t) buffer[0];
+//			Xresult = (float)accelX * 0.0156;
+//			accelY = (int16_t) buffer[3] << 8;
+//			accelY |= (int16_t)buffer[2];
+//			Yresult = (float)accelY * 0.0156;
+//			accelZ = (int16_t)buffer[5] << 8;
+//			accelZ |= (int16_t)buffer[4];
+//			Zresult = (float)accelZ * 0.0156;
+//			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
-			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			sensors = osMailAlloc(qSensorsHandle, 100);
-			sensors->source = ADXL_TASK;
-			sensors->size = ADXL_SIZE;
-			memcpy (sensors->payload, buffer, 6);
-			osMailPut(qSensorsHandle, sensors);
-		}
+//			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
+//			sensors = osMailAlloc(qSensorsHandle, 100);
+//			sensors->source = ADXL_TASK;
+//			sensors->size = ADXL_SIZE;
+//			memcpy (sensors->payload, buffer, 6);
+//			osMailPut(qSensorsHandle, sensors);
+//		}
 	}
   /* USER CODE END accelTask */
 }
@@ -1152,13 +1155,16 @@ void tempMeasTask(void const * argument)
 	osDelay(500);
 	/* Infinite loop */
 	for (;;) {
-		if (osMutexWait(I2C2MutexHandle, 50) != osOK){
-		}
-		tempSensorState = TLA2024_Read(0, buffer0);
-		TLA2024_Read(1, buffer1);
-		TLA2024_Read(2, buffer2);
+		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
 
-		osMutexRelease(I2C2MutexHandle);
+		if (tempMutexStatus0 == osOK) {
+			tempSensorState = TLA2024_Read(0, buffer0);
+			TLA2024_Read(1, buffer1);
+			TLA2024_Read(2, buffer2);
+			tempMutexStatus1 = osMutexRelease(I2C2MutexHandle);
+		}
+
+
 		temperature0 = (int16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
 		temperature1 = (int16_t)buffer1[0] << 8;

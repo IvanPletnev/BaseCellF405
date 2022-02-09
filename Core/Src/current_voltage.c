@@ -15,7 +15,8 @@ int16_t rawCurrent[3];
 int16_t rawVoltage[3];
 int16_t averageCurrent[3];
 int16_t averageVoltage[3];
-
+osStatus cvMutexStatus0;
+osStatus cvMutexStatus1;
 
 
 extern osMutexId I2C2MutexHandle;
@@ -31,53 +32,50 @@ void cvTask(void const * argument){
 
 	for(;;){
 
-			if (osMutexWait(I2C2MutexHandle, 200) != osOK){
-			}
-			if (ina219ReadRegister(0, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
-				if (regValue != 0x0C67){
-					ina219SetCalibration_16V_80A_075mOhm(0);
-					regValue = 0;
+			cvMutexStatus0 = osMutexWait(I2C2MutexHandle, 10);
+			if (cvMutexStatus0 == osOK){
+
+				if (ina219ReadRegister(0, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
+					if (regValue != 0x0C67){
+						ina219SetCalibration_16V_80A_075mOhm(0);
+						regValue = 0;
+					}
+					rawCurrent[0] = ina219GetCurrent_raw(0); // ток потребления бортовой сети. отрицательное значение
+					rawVoltage[0] = ina219GetBusVoltage_raw(0); //получаем значения напряжения
+				} else {
+					rawCurrent[0] = 0;
+					rawVoltage[0] = 0;
 				}
-				rawCurrent[0] = ina219GetCurrent_raw(0); // ток потребления бортовой сети. отрицательное значение
-				rawVoltage[0] = ina219GetBusVoltage_raw(0); //получаем значения напряжения
-			} else {
-				rawCurrent[0] = 0;
-				rawVoltage[0] = 0;
-			}
 
 
-			if (ina219ReadRegister(1, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
-				if (regValue != 0x0C67){
-					ina219SetCalibration_16V_80A_05mOhm(1);
-					regValue = 0;
+				if (ina219ReadRegister(1, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
+					if (regValue != 0x0C67){
+						ina219SetCalibration_16V_80A_05mOhm(1);
+						regValue = 0;
+					}
+					rawCurrent[1] = ina219GetCurrent_raw(1); // ток первого аккумулятора. "+" зарядка, "-" потребление
+					rawVoltage[1] = ina219GetBusVoltage_raw(1);
+				} else {
+					rawCurrent[1] = 0;
+					rawVoltage[1] = 0;
 				}
-				rawCurrent[1] = ina219GetCurrent_raw(1); // ток первого аккумулятора. "+" зарядка, "-" потребление
-				rawVoltage[1] = ina219GetBusVoltage_raw(1);
-			} else {
-				rawCurrent[1] = 0;
-				rawVoltage[1] = 0;
-			}
 
 
-			if (ina219ReadRegister(2, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
-				if (regValue != 0x0C67){
-					ina219SetCalibration_16V_80A(2);
-					regValue = 0;
+				if (ina219ReadRegister(2, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
+					if (regValue != 0x0C67){
+						ina219SetCalibration_16V_80A(2);
+						regValue = 0;
+					}
+					rawCurrent[2] = ina219GetCurrent_raw(2); // ток первого аккумулятора. "+" зарядка, "-" потребление
+					rawVoltage[2] = ina219GetBusVoltage_raw(2);
+				} else {
+					rawCurrent[2] = 0;
+					rawVoltage[2] = 0;
 				}
-				rawCurrent[2] = ina219GetCurrent_raw(2); // ток первого аккумулятора. "+" зарядка, "-" потребление
-				rawVoltage[2] = ina219GetBusVoltage_raw(2);
-			} else {
-				rawCurrent[2] = 0;
-				rawVoltage[2] = 0;
+				cvMutexStatus1 = osMutexRelease(I2C2MutexHandle);
 			}
 
 
-
-
-
-
-
-			osMutexRelease(I2C2MutexHandle);
 
 			averageCurrent[0] = filtering(rawCurrent[0], &currentFilter[0]);
 			averageCurrent[1] = filtering(rawCurrent[1], &currentFilter[1]);
@@ -104,6 +102,6 @@ void cvTask(void const * argument){
 			sensors->payload[11] = (uint8_t)(rawCurrent[2] & 0x00FF);
 
 			osMailPut(qSensorsHandle, sensors);
-			osDelay(300);
+			osDelay(500);
 		}
 }
