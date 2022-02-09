@@ -17,18 +17,27 @@ int16_t averageCurrent[3];
 int16_t averageVoltage[3];
 osStatus cvMutexStatus0;
 osStatus cvMutexStatus1;
-
+uint32_t i2cErrorCode = 0;
 
 extern osMutexId I2C2MutexHandle;
 extern osMailQId qSensorsHandle;
+extern I2C_HandleTypeDef hi2c2;
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+	if (hi2c->Instance == I2C2) {
+		i2cErrorCode = HAL_I2C_GetError(&hi2c2);
+	}
+}
+
 
 void cvTask(void const * argument){
-
 
 	sensorsData *sensors;
 	uint16_t regValue = 0;
 	ina219Init();
 	osDelay(200);
+	static uint8_t errorsCounter = 0;
 
 	for(;;){
 
@@ -45,6 +54,7 @@ void cvTask(void const * argument){
 				} else {
 					rawCurrent[0] = 0;
 					rawVoltage[0] = 0;
+					++errorsCounter;
 				}
 
 
@@ -58,6 +68,7 @@ void cvTask(void const * argument){
 				} else {
 					rawCurrent[1] = 0;
 					rawVoltage[1] = 0;
+					++errorsCounter;
 				}
 
 
@@ -71,6 +82,11 @@ void cvTask(void const * argument){
 				} else {
 					rawCurrent[2] = 0;
 					rawVoltage[2] = 0;
+					++errorsCounter;
+				}
+				if (errorsCounter == 3){
+					errorsCounter = 0;
+
 				}
 				cvMutexStatus1 = osMutexRelease(I2C2MutexHandle);
 			}
