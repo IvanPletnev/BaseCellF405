@@ -11,6 +11,7 @@
 #include "cmsis_os.h"
 #include "apds9960.h"
 
+
 int16_t rawCurrent[3];
 int16_t rawVoltage[3];
 int16_t averageCurrent[3];
@@ -85,10 +86,13 @@ void cvTask(void const * argument){
 					++errorsCounter;
 				}
 				if (errorsCounter == 3){
-					errorsCounter = 0;
-
+					HAL_I2C_DeInit(&hi2c2);
+					osDelay(5);
+					HAL_I2C_Init(&hi2c2);
+					ina219Init();
 				}
 				cvMutexStatus1 = osMutexRelease(I2C2MutexHandle);
+				errorsCounter = 0;
 			}
 
 
@@ -118,6 +122,6 @@ void cvTask(void const * argument){
 			sensors->payload[11] = (uint8_t)(rawCurrent[2] & 0x00FF);
 
 			osMailPut(qSensorsHandle, sensors);
-			osDelay(500);
+			osDelay(300);
 		}
 }
