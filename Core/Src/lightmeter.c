@@ -9,16 +9,13 @@
 
 #define DISCRETE		10
 
-
 extern osMailQId qSensorsHandle;
+extern I2C_HandleTypeDef hi2c1;
 uint8_t lightMeterStatusByte = 0;
-
 
 uint16_t debugLightLevel0 = 0;
 uint16_t debugLightLevel1 = 0;
 
-uint8_t mpxControlReg = 0;
-uint8_t mpxControlReg1 = 0;
 uint8_t result;
 lightData lightTable[TAB_ENTRY_COUNT] = {
 
@@ -48,7 +45,6 @@ uint8_t getAutoBrightness (uint16_t apds){
 		if ((apds > lightTable[i].apdsValue) && (apds <= lightTable[i+1].apdsValue)) {
 			return lightTable[i].brightness;
 		}
-
 	}
 	return 0;
 }
@@ -114,9 +110,6 @@ void lightMeterTask(void const * argument) {
 	uint8_t blue0[2];
 	uint8_t blue1[2];
 
-	static uint8_t counter = 0;
-	static uint8_t counter1 = 0;
-
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
 	uint32_t lightSum = 0;
@@ -125,6 +118,9 @@ void lightMeterTask(void const * argument) {
 	sensorsData *autoBlQueue = {0};
 	uint8_t aTime0 = 0;
 	uint8_t aTime1 = 0;
+	uint8_t errorsCount = 0;
+	uint8_t status0 = 0;
+	uint8_t status1 = 0;
 
 	osDelay(500);
 	APDS9960_Init();
@@ -133,36 +129,36 @@ void lightMeterTask(void const * argument) {
 
 	for (;;) {
 
-		if(!APDS9960_ReadLight(0, light0)){
+		if((status0 = APDS9960_ReadLight(0, light0)) != STATUS_OK){
 			lightMeterStatusByte |= 0x01;
-			light0[0] = 0;
-			light0[1] = 0;
-			red0[0] = 0;
-			red0[1] = 0;
-			green0[0] = 0;
-			green0[1] = 0;
-			blue0[0] = 0;
-			blue0[1] = 0;
+			++errorsCount;
+			light0[0] = 0; light0[1] = 0; red0[0] = 0; red0[1] = 0; green0[0] = 0; green0[1] = 0; blue0[1] = 0;
 		}
 
-		if (!APDS9960_ReadLight(1, light1)){
+		if ((status1 = APDS9960_ReadLight(1, light1)) != STATUS_OK){
 			lightMeterStatusByte |= 0x02;
-			light1[0] = 0;
-			light1[1] = 0;
-			red1[0] = 0;
-			red1[1] = 0;
-			green1[0] = 0;
-			green1[1] = 0;
-			blue1[0] = 0;
-			blue1[1] = 0;
+			++errorsCount;
+			light1[0] = 0; light1[1] = 0; red1[0] = 0; red1[1] = 0; green1[0] = 0; green1[1] = 0; blue1[1] = 0;
 		}
 
-		APDS9960_ReadRedLight(0, red0);
-		APDS9960_ReadRedLight(1, red1);
-		APDS9960_ReadGreenLight(0, green0);
-		APDS9960_ReadGreenLight(1, green1);
-		APDS9960_ReadBlueLight(0, blue0);
-		APDS9960_ReadBlueLight(1, blue1);
+		if (status0) {
+			APDS9960_ReadRedLight(0, red0);
+			APDS9960_ReadGreenLight(0, green0);
+			APDS9960_ReadBlueLight(0, blue0);
+		}
+
+		if (status1) {
+			APDS9960_ReadRedLight(1, red1);
+			APDS9960_ReadGreenLight(1, green1);
+			APDS9960_ReadBlueLight(1, blue1);
+		}
+
+		if (!status0 && !status1) {
+			HAL_I2C_DeInit(&hi2c1);
+			osDelay(10);
+			HAL_I2C_Init(&hi2c1);
+			APDS9960_Init();
+		}
 
 		lightLevel = (uint16_t)light0[0] << 8;
 		lightLevel |= light0[1];
@@ -178,10 +174,10 @@ void lightMeterTask(void const * argument) {
 			lightMeterStatusByte |= 0x10;
 			disableLightSensor();
 			disablePower();
-			osDelay(100);
+			osDelay(10);
 			enablePower();
 			init();
-			osDelay(200);
+			osDelay(20);
 		}
 
 		APDS9960_SetActiveChan(1);
@@ -190,24 +186,10 @@ void lightMeterTask(void const * argument) {
 			lightMeterStatusByte |= 0x20;
 			disableLightSensor();
 			disablePower();
-			osDelay(100);
+			osDelay(10);
 			enablePower();
 			init();
-			osDelay(200);
-		}
-
-		if ((lightLevel == 42405) || (lightLevel == 544)){
-			if(++counter >= 5) {
-				counter = 0;
-				lightMeterStatusByte |= 0x04;
-			}
-		}
-
-		if ((lightLevel1 == 44302) || (lightLevel1 == 23822)) {
-			if(++counter1 >= 5) {
-				counter1 = 0;
-				lightMeterStatusByte |= 0x08;
-			}
+			osDelay(20);
 		}
 
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;

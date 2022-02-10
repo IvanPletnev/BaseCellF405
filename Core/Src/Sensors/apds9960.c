@@ -177,7 +177,7 @@ uint8_t APDS9960_Init(void) {
 			continue;
 		}
 
-		osDelay(100);
+		osDelay(20);
 
 		/* Read ID register and check against known values for APDS-9960 */
 		if (!sensorReadDataByte(APDS9960_ID, &apds9960_id[i])) {
@@ -269,45 +269,45 @@ uint8_t init(void) {
 	}
 
 	/* Set default values for gesture sense registers */
-	if (!setGestureEnterThresh(DEFAULT_GPENTH)) {
-		return STATUS_FAIL;
-	}
-	if (!setGestureExitThresh(DEFAULT_GEXTH)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GCONF1, DEFAULT_GCONF1)) {
-		return STATUS_FAIL;
-	}
-	if (!setGestureGain(DEFAULT_GGAIN)) {
-		return STATUS_FAIL;
-	}
-	if (!setGestureLEDDrive(DEFAULT_GLDRIVE)) {
-		return STATUS_FAIL;
-	}
-	if (!setGestureWaitTime(DEFAULT_GWTIME)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GOFFSET_U, DEFAULT_GOFFSET)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GOFFSET_D, DEFAULT_GOFFSET)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GOFFSET_L, DEFAULT_GOFFSET)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GOFFSET_R, DEFAULT_GOFFSET)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GPULSE, DEFAULT_GPULSE)) {
-		return STATUS_FAIL;
-	}
-	if (!sensorWriteDataByte(APDS9960_GCONF3, DEFAULT_GCONF3)) {
-		return STATUS_FAIL;
-	}
-	if (!setGestureIntEnable(DEFAULT_GIEN)) {
-		return STATUS_FAIL;
-	}
+//	if (!setGestureEnterThresh(DEFAULT_GPENTH)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!setGestureExitThresh(DEFAULT_GEXTH)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GCONF1, DEFAULT_GCONF1)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!setGestureGain(DEFAULT_GGAIN)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!setGestureLEDDrive(DEFAULT_GLDRIVE)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!setGestureWaitTime(DEFAULT_GWTIME)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GOFFSET_U, DEFAULT_GOFFSET)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GOFFSET_D, DEFAULT_GOFFSET)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GOFFSET_L, DEFAULT_GOFFSET)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GOFFSET_R, DEFAULT_GOFFSET)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GPULSE, DEFAULT_GPULSE)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!sensorWriteDataByte(APDS9960_GCONF3, DEFAULT_GCONF3)) {
+//		return STATUS_FAIL;
+//	}
+//	if (!setGestureIntEnable(DEFAULT_GIEN)) {
+//		return STATUS_FAIL;
+//	}
 	if (!enableLightSensor(0)) {
 		return STATUS_FAIL;
 	}
@@ -2210,14 +2210,6 @@ uint8_t mpxSetReg(uint8_t Register_Addr) {
 		return STATUS_FAIL;
 }
 
-uint8_t mpxGetReg(uint8_t Register_Addr, uint8_t data) {
-	if (HAL_I2C_Master_Receive(&hi2c1, MPX_I2C_ADDR, &data, 1, 5)
-			== HAL_OK)
-		return STATUS_OK;
-	else
-		return STATUS_FAIL;
-}
-
 /**********************************************************************************************
  * @brief  sensorWriteDataByte(uint16_t Register_Addr,uint8_t Register_Data)
  * @param  Register_Addr : Register Address
@@ -2259,7 +2251,7 @@ uint8_t sensorReadDataByte(uint16_t Register_Addr, uint8_t *Register_Data) {
 uint8_t sensorReadDataBlock(uint16_t Register_Addr, uint8_t *Register_Data,
 		uint16_t Size) {
 	if (HAL_I2C_Mem_Read(&hi2c1, APDS9960_I2C_ADDR, Register_Addr,
-			I2C_MEMADD_SIZE_8BIT, Register_Data, Size, 10) == HAL_OK)
+			I2C_MEMADD_SIZE_8BIT, Register_Data, Size, 5) == HAL_OK)
 		return STATUS_OK;
 	else
 		return STATUS_FAIL;

@@ -281,7 +281,7 @@ uint8_t getFifoStatus(void)
 uint8_t oneByteRead(uint8_t address)
 {
 	uint8_t rx[1] = {0};
-	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, address, 1, rx, 1, 100);
+	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, address, 1, rx, 1, 10);
 
 	return rx[0];
 }
@@ -292,17 +292,17 @@ void oneByteWrite(uint8_t address, uint8_t data)
 	databuf[0] = address;
 	databuf[1] = data;
 
-	HAL_I2C_Master_Transmit(&hi2c2, ADXL_ADDRESS, databuf, 2, 100);
+	HAL_I2C_Master_Transmit(&hi2c2, ADXL_ADDRESS, databuf, 2, 10);
 	
 }
 
 void multiByteRead(uint8_t startAddress, uint8_t* buffer, uint8_t size)
 {
-	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 100);
+	HAL_I2C_Mem_Read(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 50);
 }
 
 void multiByteWrite(uint8_t startAddress, uint8_t* buffer, uint8_t size)
 {
-	HAL_I2C_Mem_Write(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 100);
+	HAL_I2C_Mem_Write(&hi2c2, ADXL_ADDRESS, startAddress, 1, buffer, size, 50);
 }
 

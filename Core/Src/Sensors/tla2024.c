@@ -235,8 +235,6 @@ uint8_t TLA2024_single_shot_conv_check_os(uint8_t nSensor)
 		data_buf[0] = 0;
 		data_buf[1] = 0;
 		HAL_I2C_Master_Receive(&hi2c2, sensors[nSensor]<<1, data_buf, 2, 10);
-		while (HAL_I2C_GetState(&hi2c2) != HAL_I2C_STATE_READY){
-		}
 		if ((data_buf[0] & (TLA2024_CONF_OS.mask >> 8)) == (TLA2024_CONF_OS.mask >> 8))
 		{
 			return STATUS_OK;
@@ -254,8 +252,6 @@ uint8_t TLA2024_single_shot_conv_set_point(uint8_t nSensor, uint8_t point_reg)
 	{
 		return STATUS_FAIL;
 	}
-	while (HAL_I2C_GetState(&hi2c2) != HAL_I2C_STATE_READY){
-	}
 
 	return STATUS_OK;
 }
@@ -266,8 +262,6 @@ uint8_t TLA2024_single_shot_conv_read_data(uint8_t nSensor)
 		data_buf[0] = 0;
 		data_buf[1] = 0;
 		HAL_I2C_Master_Receive(&hi2c2, sensors[nSensor]<<1, data_buf, 2, 10);
-		while (HAL_I2C_GetState(&hi2c2) != HAL_I2C_STATE_READY){
-		}
 		if (data_buf[0]||data_buf[0])
 		{
 			return STATUS_OK;	
