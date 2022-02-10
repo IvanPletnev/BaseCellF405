@@ -43,7 +43,7 @@ uint8_t APDS9960_Init(void) {
 			continue;
 		}
 
-		osDelay(100);
+		osDelay(20);
 
 		/* Read ID register and check against known values for APDS-9960 */
 		if (!sensorReadDataByte(APDS9960_ID, &apds9960_id[i])) {

@@ -229,7 +229,6 @@ int main(void)
   HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
 
 //  allConsumersEnable();
-  __HAL_I2C_ENABLE_IT(&hi2c2, I2C_IT_ERR);
 
   HAL_TIM_Base_Start_IT(&htim11);
 
