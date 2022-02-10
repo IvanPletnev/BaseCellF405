@@ -372,7 +372,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 400000;
+  hi2c1.Init.ClockSpeed = 100000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -1118,10 +1118,10 @@ void accelTask(void const * argument)
 		evt = osSignalWait(0x01, osWaitForever);
 		if (evt.status == osEventSignal) {
 			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
+				intSource = getInterruptSource();
+				ADXL345_Read(buffer);
+				osMutexRelease(I2C2MutexHandle);
 			}
-			intSource = getInterruptSource();
-			ADXL345_Read(buffer);
-			osMutexRelease(I2C2MutexHandle);
 			accelX =(int16_t) buffer[1] << 8;
 			accelX |=(int16_t) buffer[0];
 			Xresult = (float)accelX * 0.0156;
@@ -1162,20 +1162,22 @@ void tempMeasTask(void const * argument)
 	int16_t temperature1 = 0;
 	int16_t temperature2 = 0;
 	static uint8_t fanState = 0;
+	osStatus tempMutexStatus0;
 
 	sensorsData *sensors = {0};
 
 	osDelay(500);
-
 	/* Infinite loop */
 	for (;;) {
-		if (osMutexWait(I2C2MutexHandle, 50) != osOK){
-		}
-		tempSensorState = TLA2024_Read(0, buffer0);
-		TLA2024_Read(1, buffer1);
-		TLA2024_Read(2, buffer2);
+		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
 
-		osMutexRelease(I2C2MutexHandle);
+		if (tempMutexStatus0 == osOK) {
+			tempSensorState = TLA2024_Read(0, buffer0);
+			TLA2024_Read(1, buffer1);
+			TLA2024_Read(2, buffer2);
+			osMutexRelease(I2C2MutexHandle);
+		}
+
 		temperature0 = (int16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
 		temperature1 = (int16_t)buffer1[0] << 8;
@@ -1286,6 +1288,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			tickCounter = 0;
 			osSignalSet(uartCommHandle, 0x02);
+			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
 		}
 
 /*------------------------------------------------------------------------------------------*/
