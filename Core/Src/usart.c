@@ -26,8 +26,9 @@ extern TIM_HandleTypeDef htim7;
 
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
-extern uint8_t lightMeterStatusByte;
 
+uint8_t queueStatusByte = 0;
+uint8_t queueStatusByte1 = 0;
 
 uint8_t dimmingTime = 0x32;
 uint8_t engineSwitchFlag = 0;
@@ -50,7 +51,8 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 34;
+uint8_t misFirmwareVersion1 = 35;
+//UBaseType_t mailInQueue = 0;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -65,46 +67,58 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 	if (huart->Instance == USART6) {
 		sensors = osMailAlloc(qSensorsHandle, 0);
-		sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
+		if (sensors != NULL) {
+			sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
 
-		switch (state) {
-		case 0:
-			if (currentVoltageRxBuf[0] == 0xAA){
-				state++;
-			} else {
-				return;
+			switch (state) {
+			case 0:
+				if (currentVoltageRxBuf[0] == 0xAA){
+					state++;
+				} else {
+					return;
+				}
+			case 1:
+				switch (currentVoltageRxBuf[1]) {
+
+				case CV_PACK_ID:
+					sensors->source = CV_USART_SRC;
+					memcpy(sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+					break;
+
+				case RASP_RESP_PACK_ID:
+					sensors->source = CV_RESP_SOURCE;
+					memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
+					HAL_TIM_Base_Stop_IT(&htim13);
+					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+					__HAL_TIM_SET_COUNTER(&htim13, 0);
+					break;
+
+				default:
+					break;
+				}
+				break;
 			}
-		case 1:
-			switch (currentVoltageRxBuf[1]) {
 
-			case CV_PACK_ID:
-				sensors->source = CV_USART_SRC;
-				memcpy(sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
-				break;
-
-			case RASP_RESP_PACK_ID:
-				sensors->source = CV_RESP_SOURCE;
-				memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
-				HAL_TIM_Base_Stop_IT(&htim13);
-				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
-				__HAL_TIM_SET_COUNTER(&htim13, 0);
-				break;
-
-			default:
-				break;
+			if (osMailPut(qSensorsHandle, sensors) != osOK) {
+				queueStatusByte |= 0x20;
 			}
-			break;
+		} else {
+			queueStatusByte |= 0x10;
 		}
-
-		osMailPut(qSensorsHandle, sensors);
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 
 	} else if (huart->Instance == USART1) {
 		sensors = (sensorsData *) osMailAlloc(qSensorsHandle, 0);
-		sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-		sensors->source = RASP_UART_SRC;
-		memcpy (sensors->payload, raspRxBuf, sensors->size);
-		osMailPut(qSensorsHandle, sensors);
+		if (sensors != NULL) {
+			sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+			sensors->source = RASP_UART_SRC;
+			memcpy (sensors->payload, raspRxBuf, sensors->size);
+			if (osMailPut(qSensorsHandle, sensors) != osOK) {
+				queueStatusByte |= 0x80;
+			}
+		} else {
+			queueStatusByte |= 0x40;
+		}
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
 	}
 }
@@ -385,6 +399,26 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	return ERR_OK;
 }
 
+//queueStatusByte 								7   6   5   4   3   2   1   0
+// osMailGet receive NULL pointer				|	|	|   |   |   |	|	1  (0x01)
+// osMailFree return error						|	|	|	|	|	|	1	   (0x02)
+// osMailAlloc for lightmeter packet			|	|	|	|	|	1		   (0x04)
+// osMailAlloc for autobacklight packet			|	|	|	|	1			   (0x08)
+// osMailAlloc for cvPacket	ISR					|	|	|	1				   (0x10)
+// osMailPut for cvPacket packet				|	|	1					   (0x20)
+// osMailAlloc for raspberry pack ISR			|	1						   (0x40)
+// osMailPut for raspberry pack ISR				1							   (0x80)
+
+//queueStatusByte1 								7   6   5   4   3   2   1   0
+// osMailAlloc for tempMeas task				|	|	|   |   |   |	|	1  (0x01)
+// osMailPut for tempMeas task					|	|	|	|	|	|	1	   (0x02)
+// osMailAlloc for lightmeter packet			|	|	|	|	|	1		   (0x04)
+// osMailAlloc for autobacklight packet			|	|	|	|	1			   (0x08)
+// osMailAlloc for cvPacket	ISR					|	|	|	1				   (0x10)
+// osMailPut for cvPacket packet				|	|	1					   (0x20)
+// osMailAlloc for raspberry pack ISR			|	1						   (0x40)
+// osMailPut for raspberry pack ISR				1							   (0x80)
+
 void uartCommTask(void const *argument) {
 
 	sensorsData *sensors;
@@ -405,7 +439,7 @@ void uartCommTask(void const *argument) {
 
 	/* Infinite loop */
 	for (;;) {
-		event = osMailGet(qSensorsHandle, 1);
+		event = osMailGet(qSensorsHandle, 10);
 
 		if (event.status == osEventMail) {
 			sensors = event.value.p;
@@ -473,7 +507,11 @@ void uartCommTask(void const *argument) {
 				}
 			}
 
-			osMailFree(qSensorsHandle, sensors); //освобождаем память под очередью
+			if (osMailFree(qSensorsHandle, sensors) != osOK) {
+				queueStatusByte |= 0x02;
+			}
+		} else if (event.status == osErrorParameter) {
+			queueStatusByte |= 0x01;
 		}
 
 		breaksStateTelem = breaksState;
@@ -547,6 +585,8 @@ void uartCommTask(void const *argument) {
 
 			setStatusBytes();
 
+
+
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
 			raspTxBuf[GERCON_OFFSET] = gerconState;
@@ -555,13 +595,15 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
 			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
+			raspTxBuf[DISCR_INPUT_OFFSET] = breaksState;
 			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
 			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
 			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = lightMeterStatusByte;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
+//			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] =currentQueueIndex;
 			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 

@@ -11,7 +11,7 @@
 
 extern osMailQId qSensorsHandle;
 extern I2C_HandleTypeDef hi2c1;
-uint8_t lightMeterStatusByte = 0;
+extern uint8_t queueStatusByte;
 
 uint16_t debugLightLevel0 = 0;
 uint16_t debugLightLevel1 = 0;
@@ -118,7 +118,6 @@ void lightMeterTask(void const * argument) {
 	sensorsData *autoBlQueue = {0};
 	uint8_t aTime0 = 0;
 	uint8_t aTime1 = 0;
-	uint8_t errorsCount = 0;
 	uint8_t status0 = 0;
 	uint8_t status1 = 0;
 
@@ -130,14 +129,10 @@ void lightMeterTask(void const * argument) {
 	for (;;) {
 
 		if((status0 = APDS9960_ReadLight(0, light0)) != STATUS_OK){
-			lightMeterStatusByte |= 0x01;
-			++errorsCount;
 			light0[0] = 0; light0[1] = 0; red0[0] = 0; red0[1] = 0; green0[0] = 0; green0[1] = 0; blue0[1] = 0;
 		}
 
 		if ((status1 = APDS9960_ReadLight(1, light1)) != STATUS_OK){
-			lightMeterStatusByte |= 0x02;
-			++errorsCount;
 			light1[0] = 0; light1[1] = 0; red1[0] = 0; red1[1] = 0; green1[0] = 0; green1[1] = 0; blue1[1] = 0;
 		}
 
@@ -171,7 +166,6 @@ void lightMeterTask(void const * argument) {
 		APDS9960_SetActiveChan(0);
 		sensorReadDataByte(APDS9960_ATIME, &aTime0);
 		if (aTime0 != 0xC0) {
-			lightMeterStatusByte |= 0x10;
 			disableLightSensor();
 			disablePower();
 			osDelay(10);
@@ -183,7 +177,6 @@ void lightMeterTask(void const * argument) {
 		APDS9960_SetActiveChan(1);
 		sensorReadDataByte(APDS9960_ATIME, &aTime1);
 		if (aTime1 != 0xC0) {
-			lightMeterStatusByte |= 0x20;
 			disableLightSensor();
 			disablePower();
 			osDelay(10);
@@ -195,23 +188,31 @@ void lightMeterTask(void const * argument) {
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
 		lightSumFiltered = filtering(lightSum, &currentFilter[0]);
 
-		sensors = osMailAlloc(qSensorsHandle, 1);
-		sensors->source = APDS_TASK_SOURCE;
-		sensors->size = APDS_SIZE;
-		sensors->payload[0] = light0[0]; sensors->payload[1] = light0[1]; sensors->payload[2] = light1[0]; sensors->payload[3] = light1[1];
-		sensors->payload[4] = red0[0]; sensors->payload[5] = red0[1]; sensors->payload[6] = red1[0]; sensors->payload[7] = red1[1];
-		sensors->payload[8] = green0[0]; sensors->payload[9] = green0[1]; sensors->payload[10] = green1[0]; sensors->payload[11] = green1[1];
-		sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
-		osMailPut(qSensorsHandle, sensors);
-
-		autoBlQueue = osMailAlloc(qSensorsHandle, 1);
-		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
-		autoBlQueue->size = BL_AUTO_CTL_SIZE;
-		setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
-		if (!isAutoBrightnessEnable()){
-			autoBlQueue->payload[5] = dimmingTime;
+		sensors = osMailAlloc(qSensorsHandle, 10);
+		if (sensors != NULL){
+			sensors->source = APDS_TASK_SOURCE;
+			sensors->size = APDS_SIZE;
+			sensors->payload[0] = light0[0]; sensors->payload[1] = light0[1]; sensors->payload[2] = light1[0]; sensors->payload[3] = light1[1];
+			sensors->payload[4] = red0[0]; sensors->payload[5] = red0[1]; sensors->payload[6] = red1[0]; sensors->payload[7] = red1[1];
+			sensors->payload[8] = green0[0]; sensors->payload[9] = green0[1]; sensors->payload[10] = green1[0]; sensors->payload[11] = green1[1];
+			sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
+			osMailPut(qSensorsHandle, sensors);
+		} else {
+			queueStatusByte |= 0x04;
 		}
-		osMailPut(qSensorsHandle, autoBlQueue);
+
+		autoBlQueue = osMailAlloc(qSensorsHandle, 10);
+		if (autoBlQueue != NULL){
+			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
+			autoBlQueue->size = BL_AUTO_CTL_SIZE;
+			setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
+			if (!isAutoBrightnessEnable()){
+				autoBlQueue->payload[5] = dimmingTime;
+			}
+			osMailPut(qSensorsHandle, autoBlQueue);
+		} else {
+			queueStatusByte |= 0x08;
+		}
 
 		osDelay(500);
 	}

@@ -129,6 +129,8 @@ extern uint8_t misStatusByte0;
 extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByteExtern;
 extern uint8_t breaksStateTelem;
+extern uint8_t queueStatusByte1;
+//extern UBaseType_t mailInQueue;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -1087,10 +1089,12 @@ void accelTask(void const * argument)
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
 			sensors = osMailAlloc(qSensorsHandle, 100);
-			sensors->source = ADXL_TASK;
-			sensors->size = ADXL_SIZE;
-			memcpy (sensors->payload, buffer, 6);
-			osMailPut(qSensorsHandle, sensors);
+			if (sensors != NULL) {
+				sensors->source = ADXL_TASK;
+				sensors->size = ADXL_SIZE;
+				memcpy (sensors->payload, buffer, 6);
+				osMailPut(qSensorsHandle, sensors);
+			}
 		}
 	}
   /* USER CODE END accelTask */
@@ -1184,13 +1188,19 @@ void tempMeasTask(void const * argument)
 		}
 
 		sensors = osMailAlloc(qSensorsHandle, 10);
-		sensors->source = TLA2024_TASK_SOURCE;
-		sensors->size = TLA2024_SIZE;
-		memset(sensors->payload, 0, 16);
-		memcpy (sensors->payload, buffer0, 2);
-		memcpy (sensors->payload+2, buffer1, 2);
-		memcpy (sensors->payload+4, buffer2, 2);
-		osMailPut(qSensorsHandle, sensors);
+		if (sensors != NULL){
+			sensors->source = TLA2024_TASK_SOURCE;
+			sensors->size = TLA2024_SIZE;
+			memset(sensors->payload, 0, 16);
+			memcpy (sensors->payload, buffer0, 2);
+			memcpy (sensors->payload+2, buffer1, 2);
+			memcpy (sensors->payload+4, buffer2, 2);
+			if (osMailPut(qSensorsHandle, sensors) != osOK) {
+				queueStatusByte1 |= 0x02;
+			}
+		} else {
+			queueStatusByte1 |= 0x01;
+		}
 
 		if (sensorsOnFlag) {
 			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
@@ -1251,10 +1261,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			cvRequestCounter = 0;
 			sensor = osMailAlloc(qSensorsHandle, 0);
-			sensor->source = CV_REQ_SOURCE;
-			sensor->size = CV_REQ_SIZE;
-			memcpy(sensor->payload, request, CV_REQ_SIZE);
-			osMailPut(qSensorsHandle, sensor);
+			if (sensor != NULL){
+				sensor->source = CV_REQ_SOURCE;
+				sensor->size = CV_REQ_SIZE;
+				memcpy(sensor->payload, request, CV_REQ_SIZE);
+				osMailPut(qSensorsHandle, sensor);
+			}
 
 			if (engineState == ENGINE_STOPPED)  {
 				if (!breaksStateTelem){
@@ -1302,15 +1314,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				raspOffCounter = 0;
 				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
-				sensor->source = RASP_UART_SRC;
-				sensor->size = CV_REQ_SIZE;
-				sensor->payload[0] = 0xAA;
-				sensor->payload[1] = RASP_IN_PACK_ID;
-				sensor->payload[2] = CV_REQ_SIZE;
-				sensor->payload[3] = CMD_BACKLIGHT_OFF;
-				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-				sensor->payload[5] = 0x55;
-				osMailPut(qSensorsHandle, sensor);
+				if (sensor != NULL){
+					sensor->source = RASP_UART_SRC;
+					sensor->size = CV_REQ_SIZE;
+					sensor->payload[0] = 0xAA;
+					sensor->payload[1] = RASP_IN_PACK_ID;
+					sensor->payload[2] = CV_REQ_SIZE;
+					sensor->payload[3] = CMD_BACKLIGHT_OFF;
+					sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+					sensor->payload[5] = 0x55;
+					osMailPut(qSensorsHandle, sensor);
+				}
 				raspOffState++;
 			}
 		} else {
@@ -1330,17 +1344,19 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			} else {
 				raspOffCounter = 0;
 				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
-				sensor->source = RASP_UART_SRC;
-				sensor->size = CV_REQ_SIZE;
-				sensor->payload[0] = 0xAA;
-				sensor->payload[1] = RASP_IN_PACK_ID;
-				sensor->payload[2] = CV_REQ_SIZE;
-				sensor->payload[3] = CMD_PWR_OFF;
-				sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
-				sensor->payload[5] = 0x55;
-				allConsumersDisable();
-				osMailPut(qSensorsHandle, sensor);
-				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+				if(sensor != NULL){
+					sensor->source = RASP_UART_SRC;
+					sensor->size = CV_REQ_SIZE;
+					sensor->payload[0] = 0xAA;
+					sensor->payload[1] = RASP_IN_PACK_ID;
+					sensor->payload[2] = CV_REQ_SIZE;
+					sensor->payload[3] = CMD_PWR_OFF;
+					sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
+					sensor->payload[5] = 0x55;
+					allConsumersDisable();
+					osMailPut(qSensorsHandle, sensor);
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+				}
 				raspOffState = 0;
 			}
 		} else {
