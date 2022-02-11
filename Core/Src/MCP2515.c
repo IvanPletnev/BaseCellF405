@@ -14,6 +14,8 @@ static void SPI_TxBuffer(uint8_t *buffer, uint8_t length);
 static uint8_t SPI_Rx(void);
 static void SPI_RxBuffer(uint8_t *buffer, uint8_t length);
 
+uint8_t readValue = 0;
+
 /* MCP2515 초기화 */
 bool MCP2515_Initialize(void)
 {
@@ -42,7 +44,8 @@ bool MCP2515_SetConfigMode(void)
   
   do {    
     /* 모드전환 확인 */    
-    if((MCP2515_ReadByte(MCP2515_CANSTAT) & 0xE0) == 0x80)
+    if((readValue = (MCP2515_ReadByte(MCP2515_CANSTAT) & 0xE0)) == 0x80)
+    	asm ("NOP");
       return true;
     
     loop--;
