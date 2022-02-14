@@ -136,7 +136,7 @@ extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByteExtern;
 extern uint8_t breaksStateTelem;
 extern uint8_t queueStatusByte1;
-//extern UBaseType_t mailInQueue;
+extern UBaseType_t mailInQueue;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -1301,7 +1301,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			tickCounter = 0;
 			osSignalSet(uartCommHandle, 0x02);
 			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
-//			mailInQueue = qSensorsHandle->handle->uxMessagesWaiting;
 		}
 
 /*------------------------------------------------------------------------------------------*/
