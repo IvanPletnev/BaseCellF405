@@ -32,7 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "cmsis_os.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -48,6 +48,12 @@ typedef enum _powerStateType {
 	ENABLED,
 	RASPBERRY_WAIT
 }powerStateType;
+
+typedef struct os_mailQ_cb {
+  const osMailQDef_t *queue_def;
+  QueueHandle_t handle;
+  osPoolId pool;
+} os_mailQ_cb_t;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

@@ -51,8 +51,8 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 35;
-//UBaseType_t mailInQueue = 0;
+uint8_t misFirmwareVersion1 = 36;
+UBaseType_t mailInQueue = 0;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -585,8 +585,8 @@ void uartCommTask(void const *argument) {
 
 			setStatusBytes();
 
-
-
+			mailInQueue = uxQueueMessagesWaiting(qSensorsHandle->handle);
+			
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
 			raspTxBuf[GERCON_OFFSET] = gerconState;
@@ -603,7 +603,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
-//			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] =currentQueueIndex;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
 			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 
