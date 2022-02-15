@@ -190,6 +190,7 @@ void lightMeterTask(void const * argument) {
 
 		sensors = osMailAlloc(qSensorsHandle, 10);
 		if (sensors != NULL){
+			++osMailAllocCounter;
 			sensors->source = APDS_TASK_SOURCE;
 			sensors->size = APDS_SIZE;
 			sensors->payload[0] = light0[0]; sensors->payload[1] = light0[1]; sensors->payload[2] = light1[0]; sensors->payload[3] = light1[1];
@@ -198,11 +199,14 @@ void lightMeterTask(void const * argument) {
 			sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
 			osMailPut(qSensorsHandle, sensors);
 		} else {
+			osMailFree(qSensorsHandle, sensors);
+			++queueErrorCnt;
 			queueStatusByte |= 0x04;
 		}
 
 		autoBlQueue = osMailAlloc(qSensorsHandle, 10);
 		if (autoBlQueue != NULL){
+			++osMailAllocCounter;
 			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 			autoBlQueue->size = BL_AUTO_CTL_SIZE;
 			setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
@@ -211,7 +215,9 @@ void lightMeterTask(void const * argument) {
 			}
 			osMailPut(qSensorsHandle, autoBlQueue);
 		} else {
+			++queueErrorCnt;
 			queueStatusByte |= 0x08;
+			osMailFree(qSensorsHandle, autoBlQueue);
 		}
 
 		osDelay(500);
