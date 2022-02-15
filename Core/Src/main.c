@@ -1075,7 +1075,7 @@ void accelTask(void const * argument)
 	for (;;) {
 		evt = osSignalWait(0x01, osWaitForever);
 		if (evt.status == osEventSignal) {
-			if (osMutexWait(I2C2MutexHandle, 50) != osOK){
+			if (osMutexWait(I2C2MutexHandle, 50) == osOK){
 				intSource = getInterruptSource();
 				ADXL345_Read(buffer);
 				osMutexRelease(I2C2MutexHandle);
@@ -1092,7 +1092,7 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-			sensors = osMailAlloc(qSensorsHandle, 100);
+			sensors = osMailAlloc(qSensorsHandle, 1);
 			if (sensors != NULL) {
 				++osMailAllocCounter;
 				sensors->source = ADXL_TASK;
