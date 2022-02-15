@@ -51,7 +51,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 8;
-uint8_t misFirmwareVersion1 = 3;
+uint8_t misFirmwareVersion1 = 8;
 UBaseType_t mailInQueue = 0;
 
 extern uint8_t raspOffState;
@@ -68,6 +68,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 	if (huart->Instance == USART6) {
 		sensors = osMailAlloc(qSensorsHandle, 0);
 		if (sensors != NULL) {
+			++osMailAllocCounter;
 			sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
 
 			switch (state) {
@@ -104,12 +105,14 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			}
 		} else {
 			queueStatusByte |= 0x10;
+			osMailFree(qSensorsHandle, sensors);
 		}
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 
 	} else if (huart->Instance == USART1) {
 		sensors = (sensorsData *) osMailAlloc(qSensorsHandle, 0);
 		if (sensors != NULL) {
+			++osMailAllocCounter;
 			sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
 			sensors->source = RASP_UART_SRC;
 			memcpy (sensors->payload, raspRxBuf, sensors->size);
@@ -117,6 +120,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				queueStatusByte |= 0x80;
 			}
 		} else {
+			osMailFree(qSensorsHandle, sensors);
 			queueStatusByte |= 0x40;
 		}
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
@@ -412,12 +416,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 //queueStatusByte1 								7   6   5   4   3   2   1   0
 // osMailAlloc for tempMeas task				|	|	|   |   |   |	|	1  (0x01)
 // osMailPut for tempMeas task					|	|	|	|	|	|	1	   (0x02)
-// osMailAlloc for lightmeter packet			|	|	|	|	|	1		   (0x04)
-// osMailAlloc for autobacklight packet			|	|	|	|	1			   (0x08)
-// osMailAlloc for cvPacket	ISR					|	|	|	1				   (0x10)
-// osMailPut for cvPacket packet				|	|	1					   (0x20)
-// osMailAlloc for raspberry pack ISR			|	1						   (0x40)
-// osMailPut for raspberry pack ISR				1							   (0x80)
+// 												|	|	|	|	|	1		   (0x04)
+// 												|	|	|	|	1			   (0x08)
+// 												|	|	|	1				   (0x10)
+// 												|	|	1					   (0x20)
+// 												|	1						   (0x40)
+// 												1							   (0x80)
 
 void uartCommTask(void const *argument) {
 
@@ -439,7 +443,7 @@ void uartCommTask(void const *argument) {
 
 	/* Infinite loop */
 	for (;;) {
-		event = osMailGet(qSensorsHandle, 10);
+		event = osMailGet(qSensorsHandle, 1);
 
 		if (event.status == osEventMail) {
 			sensors = event.value.p;
@@ -499,7 +503,6 @@ void uartCommTask(void const *argument) {
 					cvStatusByte1 = sensors->payload[22];
 					cvFirmwareVersion0 = sensors->payload[23];
 					cvFirmwareVersion1 = sensors->payload[24];
-
 					breaksState = sensors->payload[19];
 
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload + PACK_HEADER_SIZE, CV_SIZE);
@@ -507,10 +510,14 @@ void uartCommTask(void const *argument) {
 				}
 			}
 
-			if (osMailFree(qSensorsHandle, sensors) != osOK) {
+			if (osMailFree(qSensorsHandle, sensors) == osOK) {
+				--osMailAllocCounter;
+			} else {
 				queueStatusByte |= 0x02;
 			}
 		} else if (event.status == osErrorParameter) {
+			osMailFree(qSensorsHandle, sensors);
+			--osMailAllocCounter;
 			queueStatusByte |= 0x01;
 		}
 
@@ -520,8 +527,9 @@ void uartCommTask(void const *argument) {
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 
 		if (evt.status == osEventSignal) {
-
-			if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
+			if (evt.value.signals == 0x02){
+				HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
+				if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
 				engineStopCounter = 0;
 				if (counter < 3) {
@@ -541,80 +549,82 @@ void uartCommTask(void const *argument) {
 					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 				}
 
-			} else {
-				counter = 0;
-				if (onBoardVoltage < ENGINE_STOP_LEVEL){
-					if (engineStopCounter < 3) {
-						engineStopCounter++;
-					} else {
-						engineStopCounter = 0;
-						engineState = ENGINE_STOPPED;
-						if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
-							onboardAlarmFlag = 1;
+				} else {
+					counter = 0;
+					if (onBoardVoltage < ENGINE_STOP_LEVEL){
+						if (engineStopCounter < 3) {
+							engineStopCounter++;
+						} else {
+							engineStopCounter = 0;
+							engineState = ENGINE_STOPPED;
+							if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
+								onboardAlarmFlag = 1;
+							}
 						}
 					}
 				}
-			}
 
-			if (breaksState) {
-				breaksState = 0;
-				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-				if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-					osDelay(100);
-					raspOffState = 0;
+				if (breaksState) {
+					breaksState = 0;
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						osDelay(100);
+						raspOffState = 0;
+					}
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+
+				} else if (wakeUpFlag) {
+					wakeUpFlag = 0;
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					if (raspOffState == 2)  {
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						osDelay(100);
+						raspOffState = 0;
+					}
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 				}
-				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 
-			} else if (wakeUpFlag) {
-				wakeUpFlag = 0;
-				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-				if (raspOffState == 2)  {
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-					osDelay(100);
-					raspOffState = 0;
-				}
-				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+				setStatusBytes();
+
+				mailInQueue = uxQueueMessagesWaiting(qSensorsHandle->handle);
+
+				raspTxBuf[1] = STD_PACK_ID;
+				raspTxBuf[2] = STD_PACK_SIZE;
+				raspTxBuf[GERCON_OFFSET] = gerconState;
+				raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
+				raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
+				raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
+				raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
+				raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
+				raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
+				raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
+				raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
+				raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
+				raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
+				raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
+				raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
+				raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
+				raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
+				raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
+				raspTxBuf[STD_PACK_SIZE-1] = 0x55;
+
+				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 			}
-
-			setStatusBytes();
-
-			mailInQueue = uxQueueMessagesWaiting(qSensorsHandle->handle);
-
-			raspTxBuf[1] = STD_PACK_ID;
-			raspTxBuf[2] = STD_PACK_SIZE;
-			raspTxBuf[GERCON_OFFSET] = gerconState;
-			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
-			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
-			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
-			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
-			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
-			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
-			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
-			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
-			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
-			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
-
-			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 		}
 	}
 }
 
+
 uint8_t get_check_sum(uint8_t *source, uint8_t size) {
 	uint8_t i, uSum = 0;
-	for (i = 0; i < size - 3; i++) {
+	for (i = 0; i < size - 2; i++) {
 		uSum = uSum + source[i];
 	}
 	uSum = (~uSum) + 1;

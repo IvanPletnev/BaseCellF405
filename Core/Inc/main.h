@@ -76,6 +76,10 @@ void setTxMode (uint8_t uartNo);
 void allConsumersEnable (void);
 void allConsumersDisable(void);
 void setStatusBytes (void);
+
+extern __IO int32_t osMailAllocCounter;
+extern __IO int32_t osMailFreeCounter;
+extern __IO uint32_t queueErrorCnt;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

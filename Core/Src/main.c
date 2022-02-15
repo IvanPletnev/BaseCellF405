@@ -136,7 +136,7 @@ extern uint8_t misStatusByte1;
 extern uint8_t cvStatusByteExtern;
 extern uint8_t breaksStateTelem;
 extern uint8_t queueStatusByte1;
-extern UBaseType_t mailInQueue;
+//extern UBaseType_t mailInQueue;
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -147,6 +147,10 @@ volatile unsigned long ulHighFrequencyTimerTicks;
 int16_t debugTemp0;
 int16_t debugTemp1;
 int16_t debugTemp2;
+
+__IO int32_t osMailAllocCounter = 0;
+__IO int32_t osMailFreeCounter = 0;
+__IO uint32_t queueErrorCnt = 0;
 
 /* USER CODE END PV */
 
@@ -376,7 +380,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
+  hi2c1.Init.ClockSpeed = 400000;
   hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -410,7 +414,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 100000;
+  hi2c2.Init.ClockSpeed = 400000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -1140,10 +1144,14 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
 			sensors = osMailAlloc(qSensorsHandle, 100);
 			if (sensors != NULL) {
+				++osMailAllocCounter;
 				sensors->source = ADXL_TASK;
 				sensors->size = ADXL_SIZE;
 				memcpy (sensors->payload, buffer, 6);
 				osMailPut(qSensorsHandle, sensors);
+			} else {
+				++queueErrorCnt;
+				osMailFree(qSensorsHandle, sensors);
 			}
 		}
 	}
@@ -1237,8 +1245,9 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-		sensors = osMailAlloc(qSensorsHandle, 10);
+		sensors = osMailAlloc(qSensorsHandle, 0);
 		if (sensors != NULL){
+			++osMailAllocCounter;
 			sensors->source = TLA2024_TASK_SOURCE;
 			sensors->size = TLA2024_SIZE;
 			memset(sensors->payload, 0, 16);
@@ -1249,6 +1258,8 @@ void tempMeasTask(void const * argument)
 				queueStatusByte1 |= 0x02;
 			}
 		} else {
+			++queueErrorCnt;
+			osMailFree(qSensorsHandle, sensors);
 			queueStatusByte1 |= 0x01;
 		}
 
@@ -1300,7 +1311,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		} else {
 			tickCounter = 0;
 			osSignalSet(uartCommHandle, 0x02);
-			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
+
 		}
 
 /*------------------------------------------------------------------------------------------*/
@@ -1312,10 +1323,14 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			cvRequestCounter = 0;
 			sensor = osMailAlloc(qSensorsHandle, 0);
 			if (sensor != NULL){
+				++osMailAllocCounter;
 				sensor->source = CV_REQ_SOURCE;
 				sensor->size = CV_REQ_SIZE;
 				memcpy(sensor->payload, request, CV_REQ_SIZE);
 				osMailPut(qSensorsHandle, sensor);
+			} else {
+				++queueErrorCnt;
+				osMailFree(qSensorsHandle, sensor);
 			}
 
 			if (engineState == ENGINE_STOPPED)  {
@@ -1365,6 +1380,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffCounter = 0;
 				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_BACKLIGHT_OFF
 				if (sensor != NULL){
+					++osMailAllocCounter;
 					sensor->source = RASP_UART_SRC;
 					sensor->size = CV_REQ_SIZE;
 					sensor->payload[0] = 0xAA;
@@ -1374,6 +1390,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					sensor->payload[4] = get_check_sum(sensor->payload, CV_REQ_SIZE);
 					sensor->payload[5] = 0x55;
 					osMailPut(qSensorsHandle, sensor);
+				} else {
+					++queueErrorCnt;
+					osMailFree(qSensorsHandle, sensor);
 				}
 				raspOffState++;
 			}
@@ -1395,6 +1414,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffCounter = 0;
 				sensor = osMailAlloc(qSensorsHandle, 0); //посылаем в uartCommTask команду CMD_PWR_OFF
 				if(sensor != NULL){
+					++osMailAllocCounter;
 					sensor->source = RASP_UART_SRC;
 					sensor->size = CV_REQ_SIZE;
 					sensor->payload[0] = 0xAA;
@@ -1406,6 +1426,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					allConsumersDisable();
 					osMailPut(qSensorsHandle, sensor);
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+				} else {
+					++queueErrorCnt;
+					osMailFree(qSensorsHandle, sensor);
 				}
 				raspOffState = 0;
 			}
@@ -1472,12 +1495,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		HAL_TIM_Base_Stop_IT(&htim13);
 		__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 		sensor1 = osMailAlloc(qSensorsHandle, 0);
-		sensor1->source = CV_RESP_SOURCE;
-		sensor1->size = RASP_RESP_SIZE;
-		sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
-		memcpy(sensor1->payload, cvTimeoutResponse, 8);
-
-		osMailPut(qSensorsHandle, sensor1);
+		if (sensor1 != NULL) {
+			++osMailAllocCounter;
+			sensor1->source = CV_RESP_SOURCE;
+			sensor1->size = RASP_RESP_SIZE;
+			sensor1->payload[6] = get_check_sum(sensor1->payload, 8);
+			memcpy(sensor1->payload, cvTimeoutResponse, 8);
+			osMailPut(qSensorsHandle, sensor1);
+		} else {
+			++queueErrorCnt;
+			osMailFree(qSensorsHandle, sensor1);
+		}
 	}
 
 
