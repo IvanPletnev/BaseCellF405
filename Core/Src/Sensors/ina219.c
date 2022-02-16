@@ -32,7 +32,7 @@ extern I2C_HandleTypeDef hi2c2;
 
 uint32_t ina219CurrentDivider_mA;
 uint32_t ina219PowerDivider_mW;
-static uint8_t sensors[3] = { INA219_ADDRESS_2, INA219_ADDRESS_1, INA219_ADDRESS_3};
+static uint8_t sensors[3] = { INA219_ADDRESS_3, INA219_ADDRESS_2, INA219_ADDRESS_1};
 int16_t rawVoltage[3];
 int16_t rawCurrent[3];
 float fVoltage[3];
@@ -50,9 +50,9 @@ void ina219Init(void) {
 	ina219PowerDivider_mW = 0;
 	ina219SetCalibration_16V_80A_05mOhm(1);
 	osDelay(10);
-	ina219SetCalibration_16V_80A(2);
+	ina219SetCalibration_16V_80A(0);
 	osDelay(10);
-	ina219SetCalibration_16V_80A_075mOhm(0);
+	ina219SetCalibration_16V_80A_075mOhm(1);
 	osDelay(10);
 }
 
@@ -89,8 +89,6 @@ uint8_t ina219ReadRegister(uint8_t nSensor, uint8_t reg, uint16_t *value) {
 	}
 	if (HAL_I2C_Master_Receive(INA_DRIVER, sensors[nSensor]<<1, rxbuf, 2, 10) != HAL_OK) {
 		return STATUS_FAIL;
-	}
-	while (HAL_I2C_GetState(INA_DRIVER) != HAL_I2C_STATE_READY){
 	}
 
 	*value = (((uint16_t) rxbuf[0]) << 8) | rxbuf[1];

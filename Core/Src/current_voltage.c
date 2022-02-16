@@ -40,7 +40,7 @@ void cvTask(void const * argument){
 
 				if (ina219ReadRegister(0, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
 					if (regValue != 0x0C67){
-						ina219SetCalibration_16V_80A_075mOhm(0);
+						ina219SetCalibration_16V_80A(0);
 						regValue = 0;
 					}
 					rawCurrent[0] = ina219GetCurrent_raw(0); // ток потребления бортовой сети. отрицательное значение
@@ -54,10 +54,10 @@ void cvTask(void const * argument){
 
 				if (ina219ReadRegister(1, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
 					if (regValue != 0x0C67){
-						ina219SetCalibration_16V_80A_05mOhm(1);
+						ina219SetCalibration_16V_80A_075mOhm(1);
 						regValue = 0;
 					}
-					rawCurrent[1] = ina219GetCurrent_raw(1); // ток первого аккумулятора. "+" зарядка, "-" потребление
+					rawCurrent[1] = -ina219GetCurrent_raw(1); // ток первого аккумулятора. "+" зарядка, "-" потребление
 					rawVoltage[1] = ina219GetBusVoltage_raw(1);
 				} else {
 					rawCurrent[1] = 0;
@@ -66,19 +66,20 @@ void cvTask(void const * argument){
 				}
 
 
-				if (ina219ReadRegister(2, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
-					if (regValue != 0x0C67){
-						ina219SetCalibration_16V_80A(2);
-						regValue = 0;
-					}
-					rawCurrent[2] = ina219GetCurrent_raw(2); // ток первого аккумулятора. "+" зарядка, "-" потребление
-					rawVoltage[2] = ina219GetBusVoltage_raw(2);
-				} else {
-					rawCurrent[2] = 0;
-					rawVoltage[2] = 0;
-					++errorsCounter;
-				}
-				if (errorsCounter == 3){
+//				if (ina219ReadRegister(2, INA219_REG_CONFIG, &regValue) != STATUS_FAIL) {
+//					if (regValue != 0x0C67){
+//						ina219SetCalibration_16V_80A(2);
+//						regValue = 0;
+//					}
+//					rawCurrent[2] = ina219GetCurrent_raw(2); // ток первого аккумулятора. "+" зарядка, "-" потребление
+//					rawVoltage[2] = ina219GetBusVoltage_raw(2);
+//				} else {
+//					rawCurrent[2] = 0;
+//					rawVoltage[2] = 0;
+//					++errorsCounter;
+//				}
+				if (errorsCounter == 2){
+					errorsCounter = 0;
 					HAL_I2C_DeInit(&hi2c2);
 					osDelay(5);
 					HAL_I2C_Init(&hi2c2);

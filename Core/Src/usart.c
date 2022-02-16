@@ -310,6 +310,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[3] = CMD_BACKLIGHT_OFF;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
+			cvStatusByte &= ~0x04;
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -343,6 +344,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[3] = CMD_BACKLIGHT_ON;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, SET);
+			cvStatusByte |= 0x04;
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
@@ -488,6 +490,17 @@ void uartCommTask(void const *argument) {
 		if (evt.status == osEventSignal) {
 
 			setStatusBytes();
+			if (HAL_GPIO_ReadPin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin) == GPIO_PIN_SET) {
+				cvStatusByte |= 0x04;
+			} else {
+				cvStatusByte &= ~0x04;
+			}
+
+			if (HAL_GPIO_ReadPin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin) == GPIO_PIN_SET) {
+				cvStatusByte |= 0x08;
+			} else {
+				cvStatusByte &= ~0x08;
+			}
 
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
@@ -499,7 +512,7 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
 			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
 			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-			raspTxBuf[DISCR_INPUT_OFFSET] = wakeUpState;
+			raspTxBuf[DISCR_INPUT_OFFSET] = engineState;
 			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
 			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
