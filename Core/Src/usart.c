@@ -37,6 +37,10 @@ usartErrT usartError = 0;
 
 uint8_t autoBacklightflags[4] = { 1,1,1,1 };
 uint8_t brightnessValues[4] = { 2,2,2,2 };
+uint8_t autoBacklightflagsBackUp[4] = {0};
+uint8_t brightnessValuesBackUp[4] = {0};
+uint8_t backLightOffFlag = 0;
+
 uint8_t engineState = 0;
 uint8_t onboardAlarmFlag = 0;
 
@@ -320,6 +324,25 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+
+			destTempBuf[1] = BL_OUT_PACK_ID;
+			destTempBuf[2] = 12;
+			destTempBuf[3] = 0x0F;
+			destTempBuf[4] = BL_MODE_MAN;
+			destTempBuf[5] = 0x32; //берем значение dimmingTime из команды
+			destTempBuf[10] = get_check_sum(destTempBuf, 12);
+			destTempBuf[11] = 0x55;
+			memcpy((uint8_t*)brightnessValuesBackUp, (uint8_t*) brightnessValues, 4);
+			memcpy((uint8_t*)autoBacklightflagsBackUp, (uint8_t*) autoBacklightflags, 4);
+			backLightOffFlag = 1;
+
+			for (i = 0; i < 4; i++) {
+				autoBacklightflags[i] = BL_MODE_MAN; //выключение авторежима для всех драйверов
+				brightnessValues[i] = 0; //Нулевое значение яркости для всех драйверов
+				destTempBuf[i+6] = 0; // Заполняем нулями значения яркости пакета, отправляемого в драйвер
+			}
+			setTxMode(2); // В передачу
+			HAL_UART_Transmit_DMA(&huart2, destTempBuf, 12);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
@@ -350,6 +373,10 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_ON;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			if (backLightOffFlag) {
+				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
+				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
+			}
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);

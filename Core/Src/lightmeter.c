@@ -113,13 +113,14 @@ void lightMeterTask(void const * argument) {
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
 	uint32_t lightSum = 0;
-	static uint32_t lightSumFiltered = 0;
+//	static uint32_t lightSumFiltered = 0;
 	sensorsData *sensors = {0};
 	sensorsData *autoBlQueue = {0};
 	uint8_t aTime0 = 0;
 	uint8_t aTime1 = 0;
 	uint8_t status0 = 0;
 	uint8_t status1 = 0;
+//	uint8_t cnt = 0;
 
 	osDelay(500);
 	APDS9960_Init();
@@ -186,7 +187,6 @@ void lightMeterTask(void const * argument) {
 		}
 
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
-		lightSumFiltered = filtering(lightSum, &currentFilter[0]);
 
 		sensors = osMailAlloc(qSensorsHandle, 10);
 		if (sensors != NULL){
@@ -209,9 +209,9 @@ void lightMeterTask(void const * argument) {
 			++osMailAllocCounter;
 			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 			autoBlQueue->size = BL_AUTO_CTL_SIZE;
-			setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
+			setAutoBrightnessPacket(autoBlQueue, lightSum);
 			if (!isAutoBrightnessEnable()){
-				autoBlQueue->payload[5] = dimmingTime;
+				autoBlQueue->payload[5] = 0x32;
 			}
 			osMailPut(qSensorsHandle, autoBlQueue);
 		} else {
