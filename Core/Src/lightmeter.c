@@ -113,14 +113,14 @@ void lightMeterTask(void const * argument) {
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
 	uint32_t lightSum = 0;
-	static uint32_t lightSumFiltered = 0;
+//	static uint32_t lightSumFiltered = 0;
 	sensorsData *sensors = {0};
 	sensorsData *autoBlQueue = {0};
 	uint8_t aTime0 = 0;
 	uint8_t aTime1 = 0;
 	uint8_t status0 = 0;
 	uint8_t status1 = 0;
-	uint8_t cnt = 0;
+//	uint8_t cnt = 0;
 
 	osDelay(500);
 	APDS9960_Init();
@@ -204,26 +204,20 @@ void lightMeterTask(void const * argument) {
 			queueStatusByte |= 0x04;
 		}
 
-		if (cnt < 6) {
-			lightSumFiltered += lightSum;
-		} else {
-			cnt = 0;
-			autoBlQueue = osMailAlloc(qSensorsHandle, 10);
-			if (autoBlQueue != NULL){
-				++osMailAllocCounter;
-				autoBlQueue->source = BL_AUTO_CONTROL_SRC;
-				autoBlQueue->size = BL_AUTO_CTL_SIZE;
-				setAutoBrightnessPacket(autoBlQueue, lightSumFiltered / 6);
-				if (!isAutoBrightnessEnable()){
-					autoBlQueue->payload[5] = 0x32;
-				}
-				osMailPut(qSensorsHandle, autoBlQueue);
-				lightSumFiltered = 0;
-			} else {
-				++queueErrorCnt;
-				queueStatusByte |= 0x08;
-				osMailFree(qSensorsHandle, autoBlQueue);
+		autoBlQueue = osMailAlloc(qSensorsHandle, 10);
+		if (autoBlQueue != NULL){
+			++osMailAllocCounter;
+			autoBlQueue->source = BL_AUTO_CONTROL_SRC;
+			autoBlQueue->size = BL_AUTO_CTL_SIZE;
+			setAutoBrightnessPacket(autoBlQueue, lightSum);
+			if (!isAutoBrightnessEnable()){
+				autoBlQueue->payload[5] = 0x32;
 			}
+			osMailPut(qSensorsHandle, autoBlQueue);
+		} else {
+			++queueErrorCnt;
+			queueStatusByte |= 0x08;
+			osMailFree(qSensorsHandle, autoBlQueue);
 		}
 
 		osDelay(500);
