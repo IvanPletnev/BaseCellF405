@@ -7,11 +7,18 @@
 
 #include "canComm.h"
 
+uCAN_MSG canMessage;
+
 void canRxTask(void const * argument){
+	osEvent evt;
 
 	for (;;){
+		evt = osSignalWait(0x0A, osWaitForever);
+		if (evt.status == osEventSignal) {
+			CANSPI_Receive(&canMessage);
+			asm ("NOP");
+		}
 
-		osDelay(1);
 	}
 }
 

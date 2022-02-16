@@ -87,6 +87,9 @@ extern __IO uint32_t queueErrorCnt;
 #define SENSORS_PWR_GPIO_Port GPIOC
 #define GPIO__12V_1_Pin GPIO_PIN_0
 #define GPIO__12V_1_GPIO_Port GPIOC
+#define MCPINT_Pin GPIO_PIN_1
+#define MCPINT_GPIO_Port GPIOC
+#define MCPINT_EXTI_IRQn EXTI1_IRQn
 #define WKUP_Pin GPIO_PIN_0
 #define WKUP_GPIO_Port GPIOA
 #define GPIO__12V_2_Pin GPIO_PIN_1

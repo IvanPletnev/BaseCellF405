@@ -866,6 +866,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : MCPINT_Pin */
+  GPIO_InitStruct.Pin = MCPINT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MCPINT_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -915,6 +921,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GERCON_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
   HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
@@ -1043,6 +1052,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
+	}
+	if (GPIO_Pin == GPIO_PIN_1) {
+		osSignalSet (canRxHandle, 0x0A);
 	}
 
 }
