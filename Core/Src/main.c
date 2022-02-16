@@ -237,7 +237,7 @@ int main(void)
 
 	TLA2024_Init();
 	HAL_TIM_Base_Stop_IT(&htim13);
-	CANSPI_Initialize();
+
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */

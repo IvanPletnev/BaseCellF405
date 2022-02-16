@@ -10,6 +10,9 @@
 uCAN_MSG canMessage;
 
 void canRxTask(void const * argument){
+	osDelay(50);
+	CANSPI_Initialize();
+	osDelay(50);
 	osEvent evt;
 
 	for (;;){
