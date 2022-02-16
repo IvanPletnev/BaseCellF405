@@ -322,6 +322,21 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			destTempBuf[1] = BL_OUT_PACK_ID;
+			destTempBuf[2] = 12;
+			destTempBuf[3] = 0x0F;
+			destTempBuf[4] = BL_MODE_MAN;
+			destTempBuf[5] = 0x32; //берем значение dimmingTime из команды
+			destTempBuf[10] = get_check_sum(destTempBuf, 12);
+			destTempBuf[11] = 0x55;
+
+			for (i = 0; i < 4; i++) {
+				autoBacklightflags[i] = BL_MODE_MAN; //выключение авторежима для всех драйверов
+				brightnessValues[i] = 0; //Нулевое значение яркости для всех драйверов
+				destTempBuf[i+6] = 0; // Заполняем нулями значения яркости пакета, отправляемого в драйвер
+			}
+			setTxMode(2); // В передачу
+			HAL_UART_Transmit_DMA(&huart2, destTempBuf, 12);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
