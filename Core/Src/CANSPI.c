@@ -18,6 +18,7 @@ id_reg_t idReg;
 
 /* Sleep 모드 진입 */
 void CANSPI_Sleep(void) {
+
 	/* Clear CAN bus wakeup interrupt */
 	MCP2515_BitModify(MCP2515_CANINTF, 0x40, 0x00);
 	/* Enable CAN bus activity wakeup */
