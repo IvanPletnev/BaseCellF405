@@ -20,10 +20,8 @@ id_reg_t idReg;
 void CANSPI_Sleep(void) {
 	/* Clear CAN bus wakeup interrupt */
 	MCP2515_BitModify(MCP2515_CANINTF, 0x40, 0x00);
-
 	/* Enable CAN bus activity wakeup */
 	MCP2515_BitModify(MCP2515_CANINTE, 0x40, 0x40);
-
 	MCP2515_SetSleepMode();
 }
 
@@ -169,9 +167,19 @@ uint8_t CANSPI_Transmit(uCAN_MSG *tempCanMsg) {
 
 /* CAN 메시지 수신 */
 uint8_t CANSPI_Receive(uCAN_MSG *tempCanMsg) {
+
 	uint8_t returnValue = 0;
 	rx_reg_t rxReg;
 	ctrl_rx_status_t rxStatus;
+
+	errorStatus.error_flag_reg = MCP2515_ReadByte(MCP2515_EFLG);
+
+	if (errorStatus.RX0OVR) {
+		MCP2515_BitModify(MCP2515_EFLG, 0x40, 0);
+	}
+	if (errorStatus.RX1OVR) {
+		MCP2515_BitModify(MCP2515_EFLG, 0x80, 0);
+	}
 
 	rxStatus.ctrl_rx_status = MCP2515_GetRxStatus();
 

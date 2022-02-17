@@ -55,7 +55,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 8;
-uint8_t misFirmwareVersion1 = 8;
+uint8_t misFirmwareVersion1 = 10;
 UBaseType_t mailInQueue = 0;
 
 extern uint8_t raspOffState;
@@ -486,7 +486,9 @@ void uartCommTask(void const *argument) {
 				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, ADXL_PACK_SIZE); // -> В Raspberry
 
 			} else if (sensors->source == RASP_UART_SRC) { //пакет от RaspberryPi - управление подсветкой и платой управления питанием
+				taskENTER_CRITICAL();
 				cmdHandler(sensors->payload, sensors->size); //также пакет, имитирующий CMD_PWR_OFF по таймауту выключения Raspberry
+				taskEXIT_CRITICAL();
 
 			} else if (sensors->source == BL_AUTO_CONTROL_SRC) { //пакет авторегулирования подсветки
 				setTxMode(2);
@@ -522,6 +524,7 @@ void uartCommTask(void const *argument) {
 				case CV_USART_SRC: //в порт пришел пакет от ячейки управления питанием
 
 					chksum = get_check_sum(sensors->payload, CV_RX_BUF_SIZE);
+					taskENTER_CRITICAL();
 					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 					onBoardVoltage |= (uint16_t)sensors->payload[4];
 
@@ -531,8 +534,8 @@ void uartCommTask(void const *argument) {
 					cvFirmwareVersion0 = sensors->payload[23];
 					cvFirmwareVersion1 = sensors->payload[24];
 					breaksState = sensors->payload[19];
-
 					memcpy(raspTxBuf + CV_OFFSET, sensors->payload + PACK_HEADER_SIZE, CV_SIZE);
+					taskEXIT_CRITICAL();
 					break;
 				}
 			}

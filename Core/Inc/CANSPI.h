@@ -19,7 +19,7 @@ typedef union {
     uint8_t data6;
     uint8_t data7;
   } frame;
-  uint8_t array[14];
+  uint8_t array[17];
 } uCAN_MSG;
 
 #define dSTANDARD_CAN_MSG_ID_2_0B 1

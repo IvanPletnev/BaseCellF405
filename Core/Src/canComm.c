@@ -8,6 +8,7 @@
 #include "canComm.h"
 
 uCAN_MSG canMessage;
+uint32_t canPacketCounter = 0;
 
 void canRxTask(void const * argument){
 	osDelay(50);
@@ -19,10 +20,10 @@ void canRxTask(void const * argument){
 	for (;;){
 		evt = osSignalWait(0x0A, osWaitForever);
 		if (evt.status == osEventSignal) {
-			taskENTER_CRITICAL();
 			CANSPI_Receive(&canMessage);
-			taskEXIT_CRITICAL();
-			asm ("NOP");
+			MCP2515_BitModify(MCP2515_CANINTF, 255, 0);
+			++canPacketCounter;
+			osThreadYield();
 		}
 
 	}
