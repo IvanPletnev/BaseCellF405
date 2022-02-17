@@ -55,7 +55,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 40;
+uint8_t misFirmwareVersion1 = 42;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
@@ -569,16 +569,6 @@ void uartCommTask(void const *argument) {
 					} else {
 						counter = 0;
 						engineState = ENGINE_STARTED;
-						HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-						if (raspOffState == 2) {
-							HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-							osDelay(100);
-							raspOffState = 0;
-						}
-						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-						HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-						HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-						osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 					}
 
 				} else {
