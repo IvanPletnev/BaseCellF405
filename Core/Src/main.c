@@ -1464,11 +1464,9 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 	}
 	
-
-	if ((engineState == ENGINE_STOPPED) && (gerconState == 0)) {
-		HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
-		cvStatusByte &= ~0x04;
-	}
+//	if ((engineState == ENGINE_STOPPED) && (gerconState == 0)) {
+//		HAL_GPIO_WritePin(GPIO__12V_1_GPIO_Port, GPIO__12V_1_Pin, RESET);
+//	}
 
 /*------------------------------------------------------------------------------------------*/
 
