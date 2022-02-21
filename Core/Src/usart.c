@@ -11,7 +11,6 @@
 #define ENGINE_STOP_LEVEL		1280
 #define ONBOARD_CRITICAL_LEVEL	1230
 
-extern osMailQId qSensorsHandle;
 extern osThreadId defaultTaskHandle;
 extern DMA_HandleTypeDef hdma_usart6_rx;
 extern DMA_HandleTypeDef hdma_usart1_rx;
@@ -48,33 +47,34 @@ uint8_t chksum = 0;
 
 uint8_t breaksStateTelem = 0;
 
-
 uint8_t misStatusByte0 = 0;
 uint8_t misStatusByte1 = 0;
 
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 43;
+uint8_t misFirmwareVersion1 = 44;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
 
+static volatile sensorsData xSensors;
+static volatile sensorsData *sensors = &xSensors;
+
 HeapStats_t stats;
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
-	sensorsData *sensors;
+
+	BaseType_t xHigherPriorityTaskWoken = 0;
 	uint8_t state = 0;
 
 	HAL_UART_DMAStop(huart);
 	HAL_UART_AbortReceive(huart);
 
 	if (huart->Instance == USART6) {
-		sensors = osMailAlloc(qSensorsHandle, 0);
-		if (sensors != NULL) {
-			++osMailAllocCounter;
+
 			sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
 
 			switch (state) {
@@ -89,12 +89,12 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 				case CV_PACK_ID:
 					sensors->source = CV_USART_SRC;
-					memcpy(sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+					memcpy((uint8_t*)sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 					break;
 
 				case RASP_RESP_PACK_ID:
 					sensors->source = CV_RESP_SOURCE;
-					memcpy(sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
+					memcpy((uint8_t*)sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 					HAL_TIM_Base_Stop_IT(&htim13);
 					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 					__HAL_TIM_SET_COUNTER(&htim13, 0);
@@ -106,29 +106,23 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				break;
 			}
 
-			if (osMailPut(qSensorsHandle, sensors) != osOK) {
-				queueStatusByte |= 0x20;
+			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors, &xHigherPriorityTaskWoken) != pdTRUE) {
+				queueStatusByte |= 0x08;
 			}
-		} else {
-			queueStatusByte |= 0x10;
-			osMailFree(qSensorsHandle, sensors);
-		}
+			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 
 	} else if (huart->Instance == USART1) {
-		sensors = (sensorsData *) osMailAlloc(qSensorsHandle, 0);
-		if (sensors != NULL) {
-			++osMailAllocCounter;
-			sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-			sensors->source = RASP_UART_SRC;
-			memcpy (sensors->payload, raspRxBuf, sensors->size);
-			if (osMailPut(qSensorsHandle, sensors) != osOK) {
-				queueStatusByte |= 0x80;
-			}
-		} else {
-			osMailFree(qSensorsHandle, sensors);
-			queueStatusByte |= 0x40;
+		sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+		sensors->source = RASP_UART_SRC;
+		memcpy ((uint8_t*)sensors->payload, raspRxBuf, sensors->size);
+
+		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors, &xHigherPriorityTaskWoken) != pdTRUE) {
+			queueStatusByte |= 0x10;
 		}
+		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
 	}
 }
@@ -433,18 +427,18 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 }
 
 //queueStatusByte 								7   6   5   4   3   2   1   0
-// osMailGet receive NULL pointer				|	|	|   |   |   |	|	1  (0x01)
-// osMailFree return error						|	|	|	|	|	|	1	   (0x02)
-// osMailAlloc for lightmeter packet			|	|	|	|	|	1		   (0x04)
-// osMailAlloc for autobacklight packet			|	|	|	|	1			   (0x08)
-// osMailAlloc for cvPacket	ISR					|	|	|	1				   (0x10)
-// osMailPut for cvPacket packet				|	|	1					   (0x20)
-// osMailAlloc for raspberry pack ISR			|	1						   (0x40)
-// osMailPut for raspberry pack ISR				1							   (0x80)
+// Temperature xQueueSend						|	|	|   |   |   |	|	1  (0x01)
+// lightmeter telemetry	xQueueSend				|	|	|	|	|	|	1	   (0x02)
+// lightmeter autobacklight	xQueueSend			|	|	|	|	|	1		   (0x04)
+// usart CV telemetry xQueueSend				|	|	|	|	1			   (0x08)
+// usart raspberry xQueueSend					|	|	|	1				   (0x10)
+// accelTask xQueueSend							|	|	1					   (0x20)
+// cv request xQueueSend timer ISR	 			|	1						   (0x40)
+// raspberry GPIO17 Backlight OFF queue			1							   (0x80)
 
 //queueStatusByte1 								7   6   5   4   3   2   1   0
-// osMailAlloc for tempMeas task				|	|	|   |   |   |	|	1  (0x01)
-// osMailPut for tempMeas task					|	|	|	|	|	|	1	   (0x02)
+// response to raspberry xQueueSend				|	|	|   |   |   |	|	1  (0x01)
+// 												|	|	|	|	|	|	1	   (0x02)
 // 												|	|	|	|	|	1		   (0x04)
 // 												|	|	|	|	1			   (0x08)
 // 												|	|	|	1				   (0x10)
@@ -454,8 +448,9 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 void uartCommTask(void const *argument) {
 
-	sensorsData *sensors;
-	osEvent event, evt;
+	sensorsData xSensors;
+	sensorsData *sensors = &xSensors;
+	osEvent evt;
 	static uint8_t counter = 0;
 	static uint8_t engineStopCounter = 0;
 	uint16_t onBoardVoltage = 0;
@@ -472,10 +467,8 @@ void uartCommTask(void const *argument) {
 
 	/* Infinite loop */
 	for (;;) {
-		event = osMailGet(qSensorsHandle, 1);
 
-		if (event.status == osEventMail) {
-			sensors = event.value.p;
+		if (xQueueReceive(qSensorsHandle, (sensorsData*)&sensors, 1) == pdPASS) {
 			raspTxBuf[0] = 0xAA;
 
 			if (sensors->source == ADXL_TASK) { //пакет от акселерометра, сразу отправляем в Raspberry, не дожидаясь таймера
@@ -542,15 +535,8 @@ void uartCommTask(void const *argument) {
 				}
 			}
 
-			if (osMailFree(qSensorsHandle, sensors) == osOK) {
-				--osMailAllocCounter;
-			} else {
-				queueStatusByte |= 0x02;
-			}
-		} else if (event.status == osErrorParameter) {
-			osMailFree(qSensorsHandle, sensors);
-			--osMailAllocCounter;
-			queueStatusByte |= 0x01;
+		} else  {
+//			queueStatusByte |= 0x01;
 		}
 
 		breaksStateTelem = breaksState;
@@ -559,8 +545,7 @@ void uartCommTask(void const *argument) {
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 
 		if (evt.status == osEventSignal) {
-			if (evt.value.signals == 0x02){
-				HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
+//				HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
 				if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
 					engineStopCounter = 0;
@@ -615,7 +600,7 @@ void uartCommTask(void const *argument) {
 
 				setStatusBytes();
 
-				mailInQueue = uxQueueMessagesWaiting(qSensorsHandle->handle);
+				mailInQueue = uxQueueMessagesWaiting(qSensorsHandle);
 				taskENTER_CRITICAL();
 				raspTxBuf[1] = STD_PACK_ID;
 				raspTxBuf[2] = STD_PACK_SIZE;
@@ -638,7 +623,7 @@ void uartCommTask(void const *argument) {
 				raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 				taskEXIT_CRITICAL();
 				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
-			}
+
 		}
 	}
 }

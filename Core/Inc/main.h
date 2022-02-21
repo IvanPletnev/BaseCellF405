@@ -58,6 +58,11 @@ typedef struct os_mailQ_cb {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
+#define MAIL_SIZE			8
+
+extern QueueHandle_t qSensorsHandle;
+extern uint8_t qSensorsBuffer[ MAIL_SIZE * sizeof( sensorsData ) ];
+extern StaticQueue_t qSensorsQueueBuffer;
 
 /* USER CODE END EC */
 
@@ -77,7 +82,6 @@ void allConsumersEnable (void);
 void allConsumersDisable(void);
 void setStatusBytes (void);
 
-extern __IO int32_t osMailAllocCounter;
 extern __IO int32_t osMailFreeCounter;
 extern __IO uint32_t queueErrorCnt;
 /* USER CODE END EFP */
@@ -139,7 +143,7 @@ extern __IO uint32_t queueErrorCnt;
 #define RASP_TIMEOUT_ID		0x0004
 #define WATCHDOG_ID			0x0005
 
-#define MAIL_SIZE			16
+
 #define APDS_TASK_SOURCE	0
 #define ADXL_TASK			1
 #define DHT22_TASK_SOURCE	2
