@@ -468,7 +468,7 @@ void uartCommTask(void const *argument) {
 	/* Infinite loop */
 	for (;;) {
 
-		if (xQueueReceive(qSensorsHandle, (sensorsData*)&sensors, 1) == pdPASS) {
+		if (xQueueReceive(qSensorsHandle, (sensorsData*) &sensors, 1) == pdPASS) {
 			raspTxBuf[0] = 0xAA;
 
 			if (sensors->source == ADXL_TASK) { //пакет от акселерометра, сразу отправляем в Raspberry, не дожидаясь таймера
@@ -545,85 +545,84 @@ void uartCommTask(void const *argument) {
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 
 		if (evt.status == osEventSignal) {
-//				HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
-				if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
+//			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
+			if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
-					engineStopCounter = 0;
-					if (counter < 3) {
-						counter++;
-					} else {
-						counter = 0;
-						engineState = ENGINE_STARTED;
-					}
-
+				engineStopCounter = 0;
+				if (counter < 3) {
+					counter++;
 				} else {
 					counter = 0;
-					if (onBoardVoltage < ENGINE_STOP_LEVEL){
-						if (engineStopCounter < 3) {
-							engineStopCounter++;
-						} else {
-							engineStopCounter = 0;
-							engineState = ENGINE_STOPPED;
-							if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
-								onboardAlarmFlag = 1;
-							}
+					engineState = ENGINE_STARTED;
+				}
+
+			} else {
+				counter = 0;
+				if (onBoardVoltage < ENGINE_STOP_LEVEL){
+					if (engineStopCounter < 3) {
+						engineStopCounter++;
+					} else {
+						engineStopCounter = 0;
+						engineState = ENGINE_STOPPED;
+						if (onBoardVoltage < ONBOARD_CRITICAL_LEVEL) {
+							onboardAlarmFlag = 1;
 						}
 					}
 				}
+			}
 
-				if (breaksState) {
+			if (breaksState) {
 //					breaksState = 0;
-					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-					if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
-						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-						osDelay(100);
-						raspOffState = 0;
-					}
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
-
-				} else if (wakeUpFlag) {
-					wakeUpFlag = 0;
-					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-					if (raspOffState == 2)  {
-						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-						osDelay(100);
-						raspOffState = 0;
-					}
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+				if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+					osDelay(100);
+					raspOffState = 0;
 				}
+				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 
-				setStatusBytes();
+			} else if (wakeUpFlag) {
+				wakeUpFlag = 0;
+				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+				if (raspOffState == 2)  {
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+					osDelay(100);
+					raspOffState = 0;
+				}
+				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+			}
 
-				mailInQueue = uxQueueMessagesWaiting(qSensorsHandle);
-				taskENTER_CRITICAL();
-				raspTxBuf[1] = STD_PACK_ID;
-				raspTxBuf[2] = STD_PACK_SIZE;
-				raspTxBuf[GERCON_OFFSET] = gerconState;
-				raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
-				raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
-				raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
-				raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
-				raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
-				raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
-				raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
-				raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
-				raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
-				raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
-				raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
-				raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
-				raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
-				raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
-				raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
-				raspTxBuf[STD_PACK_SIZE-1] = 0x55;
-				taskEXIT_CRITICAL();
-				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
+			setStatusBytes();
 
+			mailInQueue = uxQueueMessagesWaiting(qSensorsHandle);
+			taskENTER_CRITICAL();
+			raspTxBuf[1] = STD_PACK_ID;
+			raspTxBuf[2] = STD_PACK_SIZE;
+			raspTxBuf[GERCON_OFFSET] = gerconState;
+			raspTxBuf[ENGINE_STATE_OFFSET] = engineState;
+			raspTxBuf[CV_STATUS_OFFSET] = cvStatusByte;
+			raspTxBuf[CV_STATUS_OFFSET + 1] = cvStatusByte1;
+			raspTxBuf[MIS_STATUS_OFFSET] = misStatusByte0;
+			raspTxBuf[MIS_STATUS_OFFSET + 1] = misStatusByte1;
+			raspTxBuf[DISCR_INPUT_OFFSET] = breaksStateTelem;
+			raspTxBuf[DISCR_INPUT_OFFSET + 1] = discreteInputState;
+			raspTxBuf[CV_FIRMWARE_OFFSET] = cvFirmwareVersion0;
+			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
+			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
+			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
+			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
+			taskEXIT_CRITICAL();
+			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 		}
 	}
 }

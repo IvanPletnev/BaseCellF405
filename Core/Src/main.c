@@ -1266,7 +1266,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /*------------------------------------------------------------------------------------------*/
 
-		if (cvRequestCounter < 1000) {
+		if (cvRequestCounter < 500) {
 			cvRequestCounter++;
 
 		} else {
