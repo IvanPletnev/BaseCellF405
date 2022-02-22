@@ -27,6 +27,7 @@ extern TIM_HandleTypeDef htim7;
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
 extern uint8_t lightMeterStatusByte;
+extern int16_t rawCurrent[3];
 uint8_t raspTxBuf[STD_PACK_SIZE];
 
 
@@ -519,7 +520,13 @@ void uartCommTask(void const *argument) {
 				cvStatusByte &= ~0x04;
 			}
 
-			if (HAL_GPIO_ReadPin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin) == GPIO_PIN_SET) {
+//			if (HAL_GPIO_ReadPin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin) == GPIO_PIN_SET) {
+//				cvStatusByte |= 0x08;
+//			} else {
+//				cvStatusByte &= ~0x08;
+//			}
+
+			if (rawCurrent[1] > 0) {
 				cvStatusByte |= 0x08;
 			} else {
 				cvStatusByte &= ~0x08;

@@ -213,7 +213,7 @@ void lightMeterTask(void const * argument) {
 		autoBlQueue = osMailAlloc(qSensorsHandle, 1);
 		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 		autoBlQueue->size = BL_AUTO_CTL_SIZE;
-		setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
+		setAutoBrightnessPacket(autoBlQueue, lightSum);
 		if (!isAutoBrightnessEnable()){
 			autoBlQueue->payload[5] = dimmingTime;
 		}
