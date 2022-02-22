@@ -153,6 +153,9 @@ static volatile sensorsData xSensor, xSensor1;
 static volatile sensorsData *sensor = &xSensor;
 static volatile sensorsData *sensor1 = &xSensor1;
 
+uint8_t resetFlag = 0;
+uint8_t gpio17State = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -986,6 +989,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	}
 	if (huart->Instance == USART6) {
 		setRxMode(6);
+//		if (resetFlag) {
+//			resetFlag = 0;
+//			NVIC_SystemReset();
+//		}
 	}
 //	if (huart->Instance == USART1) {
 //		for (i = 0; i < STD_PACK_SIZE; i++) {
@@ -1347,7 +1354,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 2:
-		if ((HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET)) {
+		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin == GPIO_PIN_RESET)) {
 			stateChangeCounter = 0;
 			if (raspOffCounter < 119950) {
 				if (!breaksStateTelem){
