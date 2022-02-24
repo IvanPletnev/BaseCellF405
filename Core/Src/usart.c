@@ -25,6 +25,7 @@ extern TIM_HandleTypeDef htim7;
 
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
+extern uint8_t resetFlag;
 
 uint8_t queueStatusByte = 0;
 uint8_t queueStatusByte1 = 0;
@@ -293,6 +294,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			resetFlag = 1;
 			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
