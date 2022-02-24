@@ -156,6 +156,8 @@ static volatile sensorsData *sensor1 = &xSensor1;
 uint8_t resetFlag = 0;
 uint8_t gpio17State = 0;
 
+uint8_t turnOffBreaksFlag = 0;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -989,10 +991,10 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 	}
 	if (huart->Instance == USART6) {
 		setRxMode(6);
-//		if (resetFlag) {
-//			resetFlag = 0;
-//			NVIC_SystemReset();
-//		}
+		if (resetFlag) {
+			resetFlag = 0;
+			NVIC_SystemReset();
+		}
 	}
 //	if (huart->Instance == USART1) {
 //		for (i = 0; i < STD_PACK_SIZE; i++) {
@@ -1206,16 +1208,16 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-			sensors->source = TLA2024_TASK_SOURCE;
-			sensors->size = TLA2024_SIZE;
-			memset(sensors->payload, 0, 16);
-			memcpy (sensors->payload, buffer0, 2);
-			memcpy (sensors->payload+2, buffer1, 2);
-			memcpy (sensors->payload+4, buffer2, 2);
-			if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
-				queueStatusByte |= 0x01;
-				++queueErrorCnt;
-			}
+		sensors->source = TLA2024_TASK_SOURCE;
+		sensors->size = TLA2024_SIZE;
+		memset(sensors->payload, 0, 16);
+		memcpy (sensors->payload, buffer0, 2);
+		memcpy (sensors->payload+2, buffer1, 2);
+		memcpy (sensors->payload+4, buffer2, 2);
+		if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
+			queueStatusByte |= 0x01;
+			++queueErrorCnt;
+		}
 
 		if (sensorsOnFlag) {
 			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
@@ -1312,7 +1314,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	switch (raspOffState) {
 
 	case 0:
-		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_SET){
+		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_SET){
 			if (raspOffCounter < 20){
 				raspOffCounter++;
 			} else {
@@ -1325,7 +1327,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 1:
-		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin) == GPIO_PIN_RESET) {
+		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_RESET) {
 
 			if (raspOffCounter < 50) {
 				raspOffCounter++;
@@ -1344,8 +1346,13 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 					++queueErrorCnt;
 				}
 				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
-
-				raspOffState++;
+				if (breaksStateTelem) {
+					turnOffBreaksFlag = 1;
+					raspOffState = 3;
+				} else {
+					turnOffBreaksFlag = 0;
+					raspOffState++;
+				}
 			}
 		} else {
 			raspOffCounter = 0;
@@ -1353,7 +1360,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 2:
-		if (HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin == GPIO_PIN_RESET)) {
+		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_RESET) {
 			stateChangeCounter = 0;
 			if (raspOffCounter < 119950) {
 				if (!breaksStateTelem){
@@ -1387,6 +1394,34 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				stateChangeCounter = 0;
 				raspOffState = 0;
 			}
+		}
+		break;
+
+	case 3:
+
+		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_RESET) {
+			if (raspOffCounter < 119950) {
+					raspOffCounter++;
+			} else {
+				raspOffCounter = 0;
+				sensor->source = RASP_UART_SRC;
+				sensor->size = CV_REQ_SIZE;
+				sensor->payload[0] = 0xAA;
+				sensor->payload[1] = RASP_IN_PACK_ID;
+				sensor->payload[2] = CV_REQ_SIZE;
+				sensor->payload[3] = CMD_PWR_OFF;
+				sensor->payload[4] = get_check_sum((uint8_t*)sensor->payload, CV_REQ_SIZE);
+				sensor->payload[5] = 0x55;
+				allConsumersDisable();
+				if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
+					++queueErrorCnt;
+				}
+				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+				raspOffState = 0;
+			}
+		} else {
+			raspOffCounter = 0;
 		}
 		break;
 	}
