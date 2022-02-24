@@ -507,8 +507,10 @@ void uartCommTask(void const *argument) {
 					break;
 
 				case TLA2024_TASK_SOURCE: // пакет от датчиков температуры
+					taskENTER_CRITICAL();
 					memcpy(raspTxBuf + TEMP_OFFSET, sensors->payload,
 							TLA2024_SIZE);
+					taskEXIT_CRITICAL();
 					break;
 
 				case DHT22_TASK_SOURCE: // пакет от датчиков температуры и влажности
@@ -534,7 +536,6 @@ void uartCommTask(void const *argument) {
 					break;
 				}
 			}
-
 		} else  {
 //			queueStatusByte |= 0x01;
 		}
@@ -545,7 +546,6 @@ void uartCommTask(void const *argument) {
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 
 		if (evt.status == osEventSignal) {
-//			HAL_GPIO_TogglePin(GPIO__5V_1_GPIO_Port, GPIO__5V_1_Pin);
 			if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
 				engineStopCounter = 0;

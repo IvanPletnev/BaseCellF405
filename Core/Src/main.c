@@ -1210,7 +1210,6 @@ void tempMeasTask(void const * argument)
 				++queueErrorCnt;
 			}
 
-
 		if (sensorsOnFlag) {
 			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
 		} else {
@@ -1333,7 +1332,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[3] = CMD_BACKLIGHT_OFF;
 				sensor->payload[4] = get_check_sum((uint8_t*)(sensor->payload), CV_REQ_SIZE);
 				sensor->payload[5] = 0x55;
-				if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
+				if (xQueueSendFromISR(qSensorsHandle, (void *) &sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
 					queueStatusByte |= 0x80;
 					++queueErrorCnt;
 				}
