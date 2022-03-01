@@ -155,8 +155,11 @@ static volatile sensorsData *sensor1 = &xSensor1;
 
 uint8_t resetFlag = 0;
 uint8_t gpio17State = 0;
-
 uint8_t turnOffBreaksFlag = 0;
+
+volatile uint8_t timeOutFlag = 0;
+volatile uint32_t timeoutCnt = 0;
+volatile uint8_t raspRestartFlag = 0;
 
 /* USER CODE END PV */
 
@@ -1322,6 +1325,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffState++;
 			}
 		} else {
+			if (timeOutFlag) {
+				if ((HAL_GetTick() - timeoutCnt) >= TIMEOUT_GPIO17) {
+					timeOutFlag = 0;
+					raspRestartFlag = 1;
+				}
+			}
 			raspOffCounter = 0;
 		}
 		break;

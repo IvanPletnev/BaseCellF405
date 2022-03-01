@@ -54,7 +54,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 45;
+uint8_t misFirmwareVersion1 = 46;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
@@ -65,6 +65,9 @@ extern uint8_t turnOffBreaksFlag;
 static volatile sensorsData xSensors;
 static volatile sensorsData *sensors = &xSensors;
 
+extern volatile uint8_t timeOutFlag;
+extern volatile uint32_t timeoutCnt;
+extern volatile uint8_t raspRestartFlag;
 HeapStats_t stats;
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
@@ -573,14 +576,21 @@ void uartCommTask(void const *argument) {
 
 			if (breaksState) {
 
+				if ((!timeOutFlag) && (raspOffState == 0)) {
+					timeOutFlag = 1;
+					timeoutCnt = HAL_GetTick();
+				}
+
 				if (!turnOffBreaksFlag) {
 					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-					if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
+					if ((raspOffState == 2) || (raspRestartFlag))  {
+						raspRestartFlag = 0;
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 						osDelay(100);
 						raspOffState = 0;
 					}
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					timeoutCnt = HAL_GetTick();
 					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
 					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
@@ -598,6 +608,8 @@ void uartCommTask(void const *argument) {
 				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
 				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
+			} else {
+				timeOutFlag = 0;
 			}
 
 			setStatusBytes();
