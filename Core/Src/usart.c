@@ -54,7 +54,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 46;
+uint8_t misFirmwareVersion1 = 47;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
@@ -529,7 +529,6 @@ void uartCommTask(void const *argument) {
 					taskENTER_CRITICAL();
 					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 					onBoardVoltage |= (uint16_t)sensors->payload[4];
-
 					discreteInputState = sensors->payload[20];
 					cvStatusByte = sensors->payload[21];
 					cvStatusByte1 = sensors->payload[22];
@@ -582,7 +581,6 @@ void uartCommTask(void const *argument) {
 				}
 
 				if (!turnOffBreaksFlag) {
-					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 					if ((raspOffState == 2) || (raspRestartFlag))  {
 						raspRestartFlag = 0;
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
@@ -590,6 +588,7 @@ void uartCommTask(void const *argument) {
 						raspOffState = 0;
 					}
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
 					timeoutCnt = HAL_GetTick();
 					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
@@ -597,17 +596,20 @@ void uartCommTask(void const *argument) {
 				}
 
 			} else if (wakeUpFlag) {
-				wakeUpFlag = 0;
-				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-				if (raspOffState == 2)  {
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-					osDelay(100);
-					raspOffState = 0;
+				if (!turnOffBreaksFlag) {
+					if ((raspOffState == 2) || (raspRestartFlag))  {
+						raspRestartFlag = 0;
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						osDelay(100);
+						raspOffState = 0;
+					}
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					timeoutCnt = HAL_GetTick();
+					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 				}
-				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 			} else {
 				timeOutFlag = 0;
 			}
