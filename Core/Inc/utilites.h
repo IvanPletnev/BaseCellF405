@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-#define FILTER_LEN 6
+#define FILTER_LEN 8
 #define CHANNELS 1
 
 typedef struct _filterType
