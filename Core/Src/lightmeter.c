@@ -198,7 +198,6 @@ void lightMeterTask(void const * argument) {
 			queueStatusByte |= 0x02;
 		}
 
-
 		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 		autoBlQueue->size = BL_AUTO_CTL_SIZE;
 		setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
