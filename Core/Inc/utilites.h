@@ -22,7 +22,7 @@ typedef struct _filterType
 
 // определяем масcив данных фильтра
 extern filterType currentFilter[CHANNELS];        // как внешний
-
+extern filterType voltageFilter[CHANNELS];
 int16_t filtering(int16_t input_data, filterType * flt);
 
 

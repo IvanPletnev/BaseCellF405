@@ -7,6 +7,7 @@
 #include "utilites.h"
 
 filterType currentFilter[CHANNELS];
+filterType voltageFilter[CHANNELS];
 
 int16_t filtering(int16_t input_data, filterType * flt)
 {
