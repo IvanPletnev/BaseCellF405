@@ -40,7 +40,7 @@ uint8_t getAutoBrightness (uint16_t apds){
 		return 2;
 	}
 
-	for (i = 0; i < TAB_ENTRY_COUNT-1; i++) {
+	for (i = 0; i < TAB_ENTRY_COUNT; i++) {
 		if ((apds > lightTable[i].apdsValue) && (apds <= lightTable[i+1].apdsValue)) {
 			return lightTable[i].brightness;
 		}
@@ -100,7 +100,6 @@ void lightMeterTask(void const * argument) {
 	uint8_t green1[2];
 	uint8_t blue0[2];
 	uint8_t blue1[2];
-
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
 	uint32_t lightSum = 0;
