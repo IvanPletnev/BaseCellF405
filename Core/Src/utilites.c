@@ -8,13 +8,13 @@
 
 filterType currentFilter[CHANNELS];
 
-int16_t filtering(int16_t input_data, filterType * flt)
+int32_t filtering(int32_t input_data, filterType * flt)
 {
 
     flt->sum -= flt->filterData[(int16_t)flt->top];        // отнять от суммы значение на которое указывает top
     flt->filterData[(int16_t)flt->top] = input_data;       // запомнить значение по top
     if(++flt->top > FILTER_LEN-1) flt->top = 0;             // увеличить указатель top, если он больше длины фильтра установить в начало
-    return (int16_t)((flt->sum += input_data)/FILTER_LEN);  // к сумме прибавить новое значение и вернуть среднее значение
+    return (int32_t)((flt->sum += input_data)/FILTER_LEN);  // к сумме прибавить новое значение и вернуть среднее значение
 
 }
 

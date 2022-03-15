@@ -181,9 +181,11 @@ void lightMeterTask(void const * argument) {
 
 		taskENTER_CRITICAL();
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
-		lightSumFiltered = filtering ((uint16_t)lightSum, &currentFilter[0]);
+		lightSumFiltered = filtering ((int32_t)lightSum, &currentFilter[0]);
 		if (lightSumFiltered < 0) {
 			lightSumFiltered = 0;
+		} else if (lightSumFiltered > 65535) {
+			lightSumFiltered = 65535;
 		}
 
 		sensors->source = APDS_TASK_SOURCE;

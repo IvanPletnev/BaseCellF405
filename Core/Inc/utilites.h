@@ -15,7 +15,7 @@
 
 typedef struct _filterType
 {
-    int16_t filterData[FILTER_LEN];    // данные фильтра
+    int32_t filterData[FILTER_LEN];    // данные фильтра
     int32_t sum;                        // текущая сумма
     int16_t top;                        // указатель на текущую выборку
 } filterType;
@@ -23,7 +23,7 @@ typedef struct _filterType
 // определяем масcив данных фильтра
 extern filterType currentFilter[CHANNELS];        // как внешний
 
-int16_t filtering(int16_t input_data, filterType * flt);
+int32_t filtering(int32_t input_data, filterType * flt);
 
 
 #endif /* INC_UTILITES_H_ */
