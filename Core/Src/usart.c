@@ -55,7 +55,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 49;
+uint8_t misFirmwareVersion1 = 50;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
