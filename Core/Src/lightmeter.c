@@ -40,7 +40,7 @@ uint8_t getAutoBrightness (uint16_t apds){
 		return 2;
 	}
 
-	for (i = 0; i < TAB_ENTRY_COUNT-1; i++) {
+	for (i = 0; i < TAB_ENTRY_COUNT; i++) {
 		if ((apds > lightTable[i].apdsValue) && (apds <= lightTable[i+1].apdsValue)) {
 			return lightTable[i].brightness;
 		}
@@ -100,11 +100,10 @@ void lightMeterTask(void const * argument) {
 	uint8_t green1[2];
 	uint8_t blue0[2];
 	uint8_t blue1[2];
-
 	uint16_t lightLevel = 0;
 	uint16_t lightLevel1 = 0;
 	uint32_t lightSum = 0;
-//	static uint32_t lightSumFiltered = 0;
+	int32_t lightSumFiltered = 0;
 	sensorsData xSensors;
 	sensorsData *sensors = &xSensors;
 	sensorsData xAutoBlQueue;
@@ -179,7 +178,14 @@ void lightMeterTask(void const * argument) {
 			osDelay(20);
 		}
 
+		taskENTER_CRITICAL();
 		lightSum = ((uint32_t)lightLevel + (uint32_t)lightLevel1) / 2;
+		lightSumFiltered = filtering ((int32_t)lightSum, &currentFilter[0]);
+		if (lightSumFiltered < 0) {
+			lightSumFiltered = 0;
+		} else if (lightSumFiltered > 65535) {
+			lightSumFiltered = 65535;
+		}
 
 		sensors->source = APDS_TASK_SOURCE;
 		sensors->size = APDS_SIZE;
@@ -187,15 +193,15 @@ void lightMeterTask(void const * argument) {
 		sensors->payload[4] = red0[0]; sensors->payload[5] = red0[1]; sensors->payload[6] = red1[0]; sensors->payload[7] = red1[1];
 		sensors->payload[8] = green0[0]; sensors->payload[9] = green0[1]; sensors->payload[10] = green1[0]; sensors->payload[11] = green1[1];
 		sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
+		taskEXIT_CRITICAL();
 		if (xQueueSend(qSensorsHandle, (void*) &sensors, 1) != pdTRUE) {
 			++queueErrorCnt;
 			queueStatusByte |= 0x02;
 		}
 
-
 		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
 		autoBlQueue->size = BL_AUTO_CTL_SIZE;
-		setAutoBrightnessPacket(autoBlQueue, lightSum);
+		setAutoBrightnessPacket(autoBlQueue, lightSumFiltered);
 		if (!isAutoBrightnessEnable()){
 			autoBlQueue->payload[5] = 0x32;
 		}

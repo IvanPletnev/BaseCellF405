@@ -22,6 +22,7 @@ extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim10;
 
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
@@ -53,8 +54,8 @@ uint8_t misStatusByte1 = 0;
 
 uint8_t cvStatusByteExtern = 0;
 
-uint8_t misFirmwareVersion0 = 8;
-uint8_t misFirmwareVersion1 = 11;
+uint8_t misFirmwareVersion0 = 6;
+uint8_t misFirmwareVersion1 = 51;
 UBaseType_t mailInQueue = 0;
 uint32_t heapFreeSize = 0;
 
@@ -62,12 +63,12 @@ extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
 extern uint8_t turnOffBreaksFlag;
 
-volatile uint8_t timeOutFlag = 0;
-volatile uint32_t timeoutCnt = 0;
-
 static volatile sensorsData xSensors;
 static volatile sensorsData *sensors = &xSensors;
 
+extern volatile uint8_t timeOutFlag;
+extern volatile uint32_t timeoutCnt;
+extern volatile uint8_t raspRestartFlag;
 HeapStats_t stats;
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
@@ -83,16 +84,33 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
 
 			switch (state) {
+
 			case 0:
+
 				if (currentVoltageRxBuf[0] == 0xAA){
 					state++;
 				} else {
-					return;
+					state = 0;
+					break;
 				}
+
 			case 1:
+
+				if (sensors->size != currentVoltageRxBuf[2]) {
+					state = 0;
+					break;
+				} else {
+					state++;
+				}
+
+			case 2:
+
 				switch (currentVoltageRxBuf[1]) {
 
 				case CV_PACK_ID:
+					HAL_TIM_Base_Stop_IT(&htim10);
+					__HAL_TIM_SET_COUNTER(&htim10, 0);
+					queueStatusByte1 &= ~0x80;
 					sensors->source = CV_USART_SRC;
 					memcpy((uint8_t*)sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 					break;
@@ -106,6 +124,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 					break;
 
 				default:
+					state = 0;
 					break;
 				}
 				break;
@@ -117,8 +136,10 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+		state = 0;
+	}
 
-	} else if (huart->Instance == USART1) {
+	if (huart->Instance == USART1) {
 		sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
 		sensors->source = RASP_UART_SRC;
 		memcpy ((uint8_t*)sensors->payload, raspRxBuf, sensors->size);
@@ -424,6 +445,9 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			sendRespToRasp(source[3], RESPONSE_OK);
 			state = 0;
 			break;
+
+		default:
+			break;
 		}
 	break;
 	}
@@ -496,6 +520,9 @@ void uartCommTask(void const *argument) {
 
 			} else if (sensors->source == CV_REQ_SOURCE) { //запрос к SourceSelector на телеметрию UART6
 				setTxMode(6);
+				__HAL_TIM_CLEAR_IT(&htim10, TIM_IT_UPDATE);
+				__HAL_TIM_SET_COUNTER(&htim10, 0);
+				HAL_TIM_Base_Start_IT(&htim10);
 				HAL_UART_Transmit_DMA(&huart6, sensors->payload, sensors->size);
 
 			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
@@ -529,7 +556,6 @@ void uartCommTask(void const *argument) {
 					taskENTER_CRITICAL();
 					onBoardVoltage = (uint16_t)(sensors->payload[3] << 8);
 					onBoardVoltage |= (uint16_t)sensors->payload[4];
-
 					discreteInputState = sensors->payload[20];
 					cvStatusByte = sensors->payload[21];
 					cvStatusByte1 = sensors->payload[22];
@@ -576,33 +602,43 @@ void uartCommTask(void const *argument) {
 
 			if (breaksState) {
 
+				if ((!timeOutFlag) && (raspOffState == 0)) {
+					timeOutFlag = 1;
+					timeoutCnt = HAL_GetTick();
+				}
+
 				if (!turnOffBreaksFlag) {
-					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-					if ((raspOffState == 2) /*&& (!breaksStateTelem)*/)  {
+					if ((raspOffState == 2) || (raspRestartFlag))  {
+						raspRestartFlag = 0;
 						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
 						osDelay(100);
 						raspOffState = 0;
 					}
 					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					timeoutCnt = HAL_GetTick();
 					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
 					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
 					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 				}
 
 			} else if (wakeUpFlag) {
-				wakeUpFlag = 0;
-				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
-				if (raspOffState == 2)  {
-					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
-					osDelay(100);
-					raspOffState = 0;
+				if (!turnOffBreaksFlag) {
+					if ((raspOffState == 2) || (raspRestartFlag))  {
+						raspRestartFlag = 0;
+						HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
+						osDelay(100);
+						raspOffState = 0;
+					}
+					HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
+					HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, SET);
+					timeoutCnt = HAL_GetTick();
+					HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
+					HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
+					osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 				}
-				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, SET);
-				HAL_GPIO_WritePin(GPIO__12V_3_GPIO_Port, GPIO__12V_3_Pin, SET);
-				HAL_GPIO_WritePin(CAM_ON_GPIO_Port, CAM_ON_Pin, SET);
-				osMessagePut(onOffQueueHandle, ENGINE_START_ID, 0);
 			} else {
-
+				timeOutFlag = 0;
 			}
 
 			setStatusBytes();

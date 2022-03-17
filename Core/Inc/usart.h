@@ -58,10 +58,13 @@ typedef enum _usartErrT {
 #define RESPONSE_OK					0x00
 #define RESPONSE_ERROR				0x01
 
+#define TIMEOUT_GPIO17				120000
+
 
 extern uint8_t autoBacklightflags[4];
 extern uint8_t brightnessValues[4];
 extern uint8_t dimmingTime;
+
 
 
 

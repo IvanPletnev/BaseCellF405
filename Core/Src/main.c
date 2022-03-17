@@ -69,6 +69,7 @@ SPI_HandleTypeDef hspi2;
 
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim10;
 TIM_HandleTypeDef htim11;
 TIM_HandleTypeDef htim13;
 TIM_HandleTypeDef htim14;
@@ -161,8 +162,15 @@ static volatile sensorsData *sensor1 = &xSensor1;
 
 uint8_t resetFlag = 0;
 uint8_t gpio17State = 0;
-
 uint8_t turnOffBreaksFlag = 0;
+
+volatile uint8_t timeOutFlag = 0;
+volatile uint32_t timeoutCnt = 0;
+volatile uint8_t raspRestartFlag = 0;
+
+volatile uint16_t testTimerCNT= 0;
+
+static volatile uint8_t cvCounter = 0;
 
 /* USER CODE END PV */
 
@@ -182,6 +190,7 @@ static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
 static void MX_SPI2_Init(void);
+static void MX_TIM10_Init(void);
 void StartDefaultTask(void const * argument);
 void lightMeterTask(void const * argument);
 void accelTask(void const * argument);
@@ -240,6 +249,7 @@ int main(void)
   MX_TIM13_Init();
   MX_TIM14_Init();
   MX_SPI2_Init();
+  MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(TXRX6_GPIO_Port, TXRX6_Pin, RESET);
 
@@ -249,6 +259,7 @@ int main(void)
 
 	TLA2024_Init();
 	HAL_TIM_Base_Stop_IT(&htim13);
+	HAL_TIM_Base_Stop_IT(&htim10);
 
   /* USER CODE END 2 */
 
@@ -609,6 +620,37 @@ static void MX_TIM7_Init(void)
   /* USER CODE BEGIN TIM7_Init 2 */
 
   /* USER CODE END TIM7_Init 2 */
+
+}
+
+/**
+  * @brief TIM10 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM10_Init(void)
+{
+
+  /* USER CODE BEGIN TIM10_Init 0 */
+
+  /* USER CODE END TIM10_Init 0 */
+
+  /* USER CODE BEGIN TIM10_Init 1 */
+
+  /* USER CODE END TIM10_Init 1 */
+  htim10.Instance = TIM10;
+  htim10.Init.Prescaler = 16799;
+  htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim10.Init.Period = 1999;
+  htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM10_Init 2 */
+
+  /* USER CODE END TIM10_Init 2 */
 
 }
 
@@ -1214,6 +1256,8 @@ void tempMeasTask(void const * argument)
 	osDelay(500);
 	/* Infinite loop */
 	for (;;) {
+
+		testTimerCNT = __HAL_TIM_GET_COUNTER(&htim10);
 		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
 
 		if (tempMutexStatus0 == osOK) {
@@ -1390,6 +1434,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				raspOffState++;
 			}
 		} else {
+			if (timeOutFlag) {
+				if ((HAL_GetTick() - timeoutCnt) >= TIMEOUT_GPIO17) {
+					timeOutFlag = 0;
+					raspRestartFlag = 1;
+				}
+			}
 			raspOffCounter = 0;
 		}
 		break;
@@ -1541,7 +1591,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 /*------------------------------------------------------------------------------------------*/
 
 
-	if (htim->Instance == TIM13) {
+	if (htim->Instance == TIM13) { //Таймаут команды управления SourceSelector
 		HAL_TIM_Base_Stop_IT(&htim13);
 		__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 		sensor1->source = CV_RESP_SOURCE;
@@ -1553,6 +1603,25 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			queueStatusByte1 |= 0x01;
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+	}
+
+	/*------------------------------------------------------------------------------------------*/
+
+	if (htim->Instance == TIM10) { //Сюда мы попадаем, если 1c нет ответа от SourceSelector
+		HAL_TIM_Base_Stop_IT(&htim10);
+		__HAL_TIM_CLEAR_IT(&htim10, TIM_IT_UPDATE);
+		__HAL_TIM_SET_COUNTER(&htim10, 0);
+		__HAL_UART_DISABLE_IT(&huart6, UART_IT_IDLE);
+		__HAL_UART_CLEAR_IDLEFLAG(&huart6);
+		HAL_UART_AbortTransmit(&huart6);
+		HAL_UART_DMAStop(&huart6);
+		HAL_UART_AbortReceive(&huart6);
+		__HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
+		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+		for (cvCounter = 0; cvCounter < CV_RX_BUF_SIZE; cvCounter++) {
+			currentVoltageRxBuf[cvCounter] = 0;
+		}
+		queueStatusByte1 |= 0x80;
 	}
 
 
