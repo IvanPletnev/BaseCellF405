@@ -94,6 +94,7 @@ osThreadId canTxHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
+osMutexId spiMutexHandle;
 /* USER CODE BEGIN PV */
 
 QueueHandle_t qSensorsHandle;
@@ -168,7 +169,6 @@ volatile uint8_t timeOutFlag = 0;
 volatile uint32_t timeoutCnt = 0;
 volatile uint8_t raspRestartFlag = 0;
 
-volatile uint16_t testTimerCNT= 0;
 
 static volatile uint8_t cvCounter = 0;
 
@@ -267,6 +267,10 @@ int main(void)
   /* definition and creation of I2C2Mutex */
   osMutexDef(I2C2Mutex);
   I2C2MutexHandle = osMutexCreate(osMutex(I2C2Mutex));
+
+  /* definition and creation of spiMutex */
+  osMutexDef(spiMutex);
+  spiMutexHandle = osMutexCreate(osMutex(spiMutex));
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -1257,7 +1261,6 @@ void tempMeasTask(void const * argument)
 	/* Infinite loop */
 	for (;;) {
 
-		testTimerCNT = __HAL_TIM_GET_COUNTER(&htim10);
 		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
 
 		if (tempMutexStatus0 == osOK) {
