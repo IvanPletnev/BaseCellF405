@@ -26,7 +26,7 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 			param->coolantTemp = message->frame.data3 - 40;
 			break;
 		case RPM:
-			param->rpm = (((uint16_t)(message->frame.data3)) << 8) | (uint16_t)message->frame.data4;
+			param->rpm = ((((uint16_t)(message->frame.data3)) << 8) | (uint16_t)message->frame.data4) >> 2;
 			break;
 		case SPEED:
 			param->speed = message->frame.data3;
