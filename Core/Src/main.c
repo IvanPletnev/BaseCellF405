@@ -63,6 +63,7 @@ I2C_HandleTypeDef hi2c1;
 I2C_HandleTypeDef hi2c2;
 I2C_HandleTypeDef hi2c3;
 
+TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim7;
 TIM_HandleTypeDef htim10;
@@ -183,6 +184,7 @@ static void MX_TIM7_Init(void);
 static void MX_TIM11_Init(void);
 static void MX_TIM13_Init(void);
 static void MX_TIM14_Init(void);
+static void MX_TIM2_Init(void);
 static void MX_TIM10_Init(void);
 void StartDefaultTask(void const * argument);
 void lightMeterTask(void const * argument);
@@ -239,6 +241,7 @@ int main(void)
   MX_TIM11_Init();
   MX_TIM13_Init();
   MX_TIM14_Init();
+  MX_TIM2_Init();
   MX_TIM10_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(TXRX6_GPIO_Port, TXRX6_Pin, RESET);
@@ -471,6 +474,51 @@ static void MX_I2C3_Init(void)
 }
 
 /**
+  * @brief TIM2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM2_Init(void)
+{
+
+  /* USER CODE BEGIN TIM2_Init 0 */
+
+  /* USER CODE END TIM2_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM2_Init 1 */
+
+  /* USER CODE END TIM2_Init 1 */
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4294967295;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM2_Init 2 */
+
+  /* USER CODE END TIM2_Init 2 */
+
+}
+
+/**
   * @brief TIM3 Initialization Function
   * @param None
   * @retval None
@@ -585,7 +633,7 @@ static void MX_TIM10_Init(void)
   htim10.Instance = TIM10;
   htim10.Init.Prescaler = 16799;
   htim10.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim10.Init.Period = 1999;
+  htim10.Init.Period = 4999;
   htim10.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim10.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim10) != HAL_OK)
@@ -1156,7 +1204,6 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-
 			sensors->source = ADXL_TASK;
 			sensors->size = ADXL_SIZE;
 			memcpy (sensors->payload, buffer, 6);
@@ -1195,7 +1242,6 @@ void tempMeasTask(void const * argument)
 	/* Infinite loop */
 	for (;;) {
 
-		testTimerCNT = __HAL_TIM_GET_COUNTER(&htim10);
 		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
 
 		if (tempMutexStatus0 == osOK) {
@@ -1351,7 +1397,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 /*------------------------------------------------------------------------------------------*/
 
-		if (secondCounter >= 120){
+		if (secondCounter >= 240){
 			secondCounter = 0;
 			if (engineState == ENGINE_STOPPED)  {
 				HAL_GPIO_WritePin(ALT_KEY_GPIO_Port, ALT_KEY_Pin, RESET);
@@ -1454,7 +1500,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		break;
 
 	case 3:
-
 		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_RESET) {
 			if (raspOffCounter < 119950) {
 					raspOffCounter++;
@@ -1527,7 +1572,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	
 /*------------------------------------------------------------------------------------------*/
 
-
 	if (htim->Instance == TIM13) { //Таймаут команды управления SourceSelector
 		HAL_TIM_Base_Stop_IT(&htim13);
 		__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -1545,6 +1589,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	/*------------------------------------------------------------------------------------------*/
 
 	if (htim->Instance == TIM10) { //Сюда мы попадаем, если 1c нет ответа от SourceSelector
+
 		HAL_TIM_Base_Stop_IT(&htim10);
 		__HAL_TIM_CLEAR_IT(&htim10, TIM_IT_UPDATE);
 		__HAL_TIM_SET_COUNTER(&htim10, 0);
@@ -1555,12 +1600,18 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		HAL_UART_AbortReceive(&huart6);
 		__HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
-		for (cvCounter = 0; cvCounter < CV_RX_BUF_SIZE; cvCounter++) {
-			currentVoltageRxBuf[cvCounter] = 0;
-		}
+//		for (cvCounter = 0; cvCounter < CV_RX_BUF_SIZE; cvCounter++) {
+//			currentVoltageRxBuf[cvCounter] = 0;
+//		}
+//		sensor->source = CV_USART_SRC;
+//		sensor->size = CV_RX_BUF_SIZE;
+//		memcpy((uint8_t*)sensor->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+//
+//		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
+//			++queueErrorCnt;
+//		}
 		queueStatusByte1 |= 0x80;
 	}
-
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {

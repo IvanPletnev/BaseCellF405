@@ -63,8 +63,8 @@ extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
 extern uint8_t turnOffBreaksFlag;
 
-static volatile sensorsData xSensors;
-static volatile sensorsData *sensors = &xSensors;
+volatile sensorsData xSensors_;
+volatile sensorsData *sensors_ = &xSensors_;
 
 extern volatile uint8_t timeOutFlag;
 extern volatile uint32_t timeoutCnt;
@@ -81,7 +81,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 	if (huart->Instance == USART6) {
 
-			sensors->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
+			sensors_->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
 
 			switch (state) {
 
@@ -96,7 +96,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 			case 1:
 
-				if (sensors->size != currentVoltageRxBuf[2]) {
+				if (sensors_->size != currentVoltageRxBuf[2]) {
 					state = 0;
 					break;
 				} else {
@@ -111,13 +111,13 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 					HAL_TIM_Base_Stop_IT(&htim10);
 					__HAL_TIM_SET_COUNTER(&htim10, 0);
 					queueStatusByte1 &= ~0x80;
-					sensors->source = CV_USART_SRC;
-					memcpy((uint8_t*)sensors->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+					sensors_->source = CV_USART_SRC;
+					memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 					break;
 
 				case RASP_RESP_PACK_ID:
-					sensors->source = CV_RESP_SOURCE;
-					memcpy((uint8_t*)sensors->payload, currentVoltageRxBuf, CV_RESP_SIZE);
+					sensors_->source = CV_RESP_SOURCE;
+					memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RESP_SIZE);
 					HAL_TIM_Base_Stop_IT(&htim13);
 					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 					__HAL_TIM_SET_COUNTER(&htim13, 0);
@@ -130,7 +130,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				break;
 			}
 
-			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors, &xHigherPriorityTaskWoken) != pdTRUE) {
+			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
 				queueStatusByte |= 0x08;
 			}
 			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
@@ -140,11 +140,11 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 	}
 
 	if (huart->Instance == USART1) {
-		sensors->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
-		sensors->source = RASP_UART_SRC;
-		memcpy ((uint8_t*)sensors->payload, raspRxBuf, sensors->size);
+		sensors_->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
+		sensors_->source = RASP_UART_SRC;
+		memcpy ((uint8_t*)sensors_->payload, raspRxBuf, sensors_->size);
 
-		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors, &xHigherPriorityTaskWoken) != pdTRUE) {
+		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
 			queueStatusByte |= 0x10;
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
@@ -473,7 +473,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 // 												|	|	|	1				   (0x10)
 // 												|	|	1					   (0x20)
 // 												|	1						   (0x40)
-// 												1							   (0x80)
+// SourceSelector connection lost				1							   (0x80)
 
 void uartCommTask(void const *argument) {
 
@@ -520,6 +520,7 @@ void uartCommTask(void const *argument) {
 
 			} else if (sensors->source == CV_REQ_SOURCE) { //запрос к SourceSelector на телеметрию UART6
 				setTxMode(6);
+				HAL_TIM_Base_Stop_IT(&htim10);
 				__HAL_TIM_CLEAR_IT(&htim10, TIM_IT_UPDATE);
 				__HAL_TIM_SET_COUNTER(&htim10, 0);
 				HAL_TIM_Base_Start_IT(&htim10);
