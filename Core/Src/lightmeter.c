@@ -10,7 +10,6 @@
 #define DISCRETE		10
 
 extern I2C_HandleTypeDef hi2c1;
-extern uint8_t queueStatusByte;
 
 uint16_t debugLightLevel0 = 0;
 uint16_t debugLightLevel1 = 0;
@@ -195,8 +194,7 @@ void lightMeterTask(void const * argument) {
 		sensors->payload[12] = blue0[0]; sensors->payload[13] = blue0[1]; sensors->payload[14] = blue1[0]; sensors->payload[15] = blue1[1];
 		taskEXIT_CRITICAL();
 		if (xQueueSend(qSensorsHandle, (void*) &sensors, 1) != pdTRUE) {
-			++queueErrorCnt;
-			queueStatusByte |= 0x02;
+
 		}
 
 		autoBlQueue->source = BL_AUTO_CONTROL_SRC;
@@ -206,8 +204,7 @@ void lightMeterTask(void const * argument) {
 			autoBlQueue->payload[5] = 0x32;
 		}
 		if (xQueueSend(qSensorsHandle, (void*) &autoBlQueue, 1) != pdTRUE) {
-			++queueErrorCnt;
-			queueStatusByte |= 0x04;
+
 		}
 
 		osDelay(500);

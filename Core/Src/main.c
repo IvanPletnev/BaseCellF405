@@ -1208,7 +1208,7 @@ void accelTask(void const * argument)
 			sensors->size = ADXL_SIZE;
 			memcpy (sensors->payload, buffer, 6);
 			if (xQueueSend(qSensorsHandle, (void*) &sensors, 1) != pdTRUE) {
-				queueStatusByte |= 0x20;
+
 			}
 		}
 	}
@@ -1311,8 +1311,7 @@ void tempMeasTask(void const * argument)
 		memcpy (sensors->payload+2, buffer1, 2);
 		memcpy (sensors->payload+4, buffer2, 2);
 		if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
-			queueStatusByte |= 0x01;
-			++queueErrorCnt;
+
 		}
 
 		if (sensorsOnFlag) {
@@ -1379,8 +1378,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			sensor->size = CV_REQ_SIZE;
 			memcpy((uint8_t*)sensor->payload, request, CV_REQ_SIZE);
 			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE){
-				queueStatusByte |= 0x40;
-				++queueErrorCnt;
+
 			}
 			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
@@ -1444,8 +1442,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[4] = get_check_sum((uint8_t*)(sensor->payload), CV_REQ_SIZE);
 				sensor->payload[5] = 0x55;
 				if (xQueueSendFromISR(qSensorsHandle, (void *) &sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
-					queueStatusByte |= 0x80;
-					++queueErrorCnt;
+
 				}
 				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 				if (breaksStateTelem) {
@@ -1580,8 +1577,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		sensor1->payload[6] = get_check_sum((uint8_t*)sensor1->payload, 8);
 		memcpy((uint8_t*)sensor1->payload, cvTimeoutResponse, 8);
 		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor1, &xHigherPriorityTaskWoken) != pdTRUE) {
-			++queueErrorCnt;
-			queueStatusByte1 |= 0x01;
+
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 	}

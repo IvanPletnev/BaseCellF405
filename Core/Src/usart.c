@@ -55,8 +55,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 51;
-UBaseType_t mailInQueue = 0;
+uint8_t misFirmwareVersion1 = 53;
 uint32_t heapFreeSize = 0;
 
 extern uint8_t raspOffState;
@@ -70,6 +69,7 @@ extern volatile uint8_t timeOutFlag;
 extern volatile uint32_t timeoutCnt;
 extern volatile uint8_t raspRestartFlag;
 HeapStats_t stats;
+
 
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
@@ -131,7 +131,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 			}
 
 			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
-				queueStatusByte |= 0x08;
+
 			}
 			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
@@ -145,7 +145,7 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 		memcpy ((uint8_t*)sensors_->payload, raspRxBuf, sensors_->size);
 
 		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
-			queueStatusByte |= 0x10;
+
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
@@ -395,10 +395,10 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_ON;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
-//			if (backLightOffFlag) {
-//				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
-//				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
-//			}
+			if (backLightOffFlag) {
+				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
+				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
+			}
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
@@ -490,6 +490,8 @@ void uartCommTask(void const *argument) {
 	uint8_t cvFirmwareVersion0 = 0;
 	uint8_t cvFirmwareVersion1 = 0;
 	uint8_t raspTxBuf[STD_PACK_SIZE] = {0};
+
+	uint16_t packetCounter = 0;
 //	uint8_t destTempBuf[6] = {0};
 
 	osDelay(200);
@@ -576,6 +578,9 @@ void uartCommTask(void const *argument) {
 		evt = osSignalWait(0x02, 1); //отправляем по прерыванию от таймера
 
 		if (evt.status == osEventSignal) {
+
+			packetCounter++;
+
 			if ((onBoardVoltage > ENGINE_START_LEVEL) && ( engineState == ENGINE_STOPPED)) {
 
 				engineStopCounter = 0;
@@ -644,7 +649,6 @@ void uartCommTask(void const *argument) {
 
 			setStatusBytes();
 
-			mailInQueue = uxQueueMessagesWaiting(qSensorsHandle);
 			taskENTER_CRITICAL();
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
@@ -660,9 +664,9 @@ void uartCommTask(void const *argument) {
 			raspTxBuf[CV_FIRMWARE_OFFSET + 1] = cvFirmwareVersion1;
 			raspTxBuf[MIS_FIRMWARE_OFFSET] = misFirmwareVersion0;
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 1] = misFirmwareVersion1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = queueStatusByte;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 2] = (uint8_t) ((packetCounter & 0xFF00) >> 8);
 			raspTxBuf[MIS_FIRMWARE_OFFSET + 3] = queueStatusByte1;
-			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = mailInQueue;
+			raspTxBuf[MIS_FIRMWARE_OFFSET + 4] = (uint8_t) (packetCounter & 0x00FF);
 			raspTxBuf[STD_PACK_SIZE-2] = get_check_sum(raspTxBuf, STD_PACK_SIZE);
 			raspTxBuf[STD_PACK_SIZE-1] = 0x55;
 			taskEXIT_CRITICAL();
