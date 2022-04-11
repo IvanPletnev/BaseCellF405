@@ -27,7 +27,7 @@
 #define DHT22_BAD_DATA				5 // Bad data received
 
 GPIO_InitTypeDef DHT22_GPIO_Struct = { 0 };
-TIM_HandleTypeDef htim7;
+
 dht22_data dht22_buf;
 uint32_t dht_pins[3] = { DHT22_GPIO_PIN_1, DHT22_GPIO_PIN_2, DHT22_GPIO_PIN_3 };
 GPIO_TypeDef *dht_ports[3] = { DHT22_GPIO_PORT_1, DHT22_GPIO_PORT_2, DHT22_GPIO_PORT_3 };
