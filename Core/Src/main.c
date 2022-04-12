@@ -32,6 +32,7 @@
 #include "usart.h"
 #include "utilites.h"
 #include "eeprom.h"
+#include "dimmer.h"
 
 /* USER CODE END Includes */
 
