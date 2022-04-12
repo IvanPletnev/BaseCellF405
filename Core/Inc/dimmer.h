@@ -13,8 +13,8 @@
 
 #define DEFAULT_PWM 500
 #define MIN_PWM 0
-#define MAX_PWM 950
-#define DIMM_MULTIPLER 10
+#define MAX_PWM 900
+#define DIMM_MULTIPLER 40
 
 extern BH1750_device_t* monitor;
 extern float pwmValue;

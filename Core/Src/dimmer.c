@@ -37,12 +37,12 @@ uint16_t SetMonitorBackligt(void)
 
 	if(targetValue > pwm_Value)
 	{
-		pwm_Value++;
+		pwm_Value=pwm_Value+3;
 		//	osDelay(10);
 	}
 	if(targetValue < pwm_Value)
 	{
-		pwm_Value--;
+		pwm_Value=pwm_Value-3;
 		//	osDelay(10);
 	}
 

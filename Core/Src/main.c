@@ -169,6 +169,10 @@ volatile uint8_t raspRestartFlag = 0;
 
 static volatile uint8_t cvCounter = 0;
 
+float pwmValue;
+uint16_t pwm_Value;
+uint16_t targetValue;
+BH1750_device_t* monitor;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -256,7 +260,10 @@ int main(void)
 	TLA2024_Init();
 	HAL_TIM_Base_Stop_IT(&htim13);
 	HAL_TIM_Base_Stop_IT(&htim10);
-
+	monitor = BH1750_init_dev_struct(&hi2c3, "monitor", true);
+	BH1750_init_dev(monitor);
+	HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
+	TIM10->CCR1=DEFAULT_PWM;
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -1373,7 +1380,8 @@ __weak void dimmerTask(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+	  TIM10->CCR1=SetMonitorBackligt();
+	  	osDelay(50);
   }
   /* USER CODE END dimmerTask */
 }
