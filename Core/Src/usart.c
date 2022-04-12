@@ -55,8 +55,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 51;
-UBaseType_t mailInQueue = 0;
+uint8_t misFirmwareVersion1 = 54;
 uint32_t heapFreeSize = 0;
 
 extern uint8_t raspOffState;
@@ -643,7 +642,6 @@ void uartCommTask(void const *argument) {
 
 			setStatusBytes();
 
-			mailInQueue = uxQueueMessagesWaiting(qSensorsHandle);
 			taskENTER_CRITICAL();
 			raspTxBuf[1] = STD_PACK_ID;
 			raspTxBuf[2] = STD_PACK_SIZE;
