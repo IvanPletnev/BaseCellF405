@@ -22,7 +22,7 @@ extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
-extern TIM_HandleTypeDef htim10;
+extern TIM_HandleTypeDef htim8;
 
 extern TIM_HandleTypeDef htim13;
 extern uint8_t wakeUpFlag;
@@ -108,8 +108,8 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 				switch (currentVoltageRxBuf[1]) {
 
 				case CV_PACK_ID:
-					HAL_TIM_Base_Stop_IT(&htim10);
-					__HAL_TIM_SET_COUNTER(&htim10, 0);
+					HAL_TIM_Base_Stop_IT(&htim8);
+					__HAL_TIM_SET_COUNTER(&htim8, 0);
 					queueStatusByte1 &= ~0x80;
 					sensors_->source = CV_USART_SRC;
 					memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
@@ -522,10 +522,10 @@ void uartCommTask(void const *argument) {
 
 			} else if (sensors->source == CV_REQ_SOURCE) { //запрос к SourceSelector на телеметрию UART6
 				setTxMode(6);
-				HAL_TIM_Base_Stop_IT(&htim10);
-				__HAL_TIM_CLEAR_IT(&htim10, TIM_IT_UPDATE);
-				__HAL_TIM_SET_COUNTER(&htim10, 0);
-				HAL_TIM_Base_Start_IT(&htim10);
+				HAL_TIM_Base_Stop_IT(&htim8);
+				__HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
+				__HAL_TIM_SET_COUNTER(&htim8, 0);
+				HAL_TIM_Base_Start_IT(&htim8);
 				HAL_UART_Transmit_DMA(&huart6, sensors->payload, sensors->size);
 
 			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
