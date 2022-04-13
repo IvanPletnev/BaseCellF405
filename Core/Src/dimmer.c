@@ -13,7 +13,6 @@
 
 uint16_t GetDimPwm(void)
 {
-	monitor->poll(monitor);
 	pwmValue = MAX_PWM - ((((float)monitor->value / 65353.0) * 1000) * DIMM_MULTIPLER);
 	return (uint16_t)pwmValue;
 }
@@ -37,12 +36,12 @@ uint16_t SetMonitorBackligt(void)
 
 	if(targetValue > pwm_Value)
 	{
-		pwm_Value=pwm_Value+3;
+		pwm_Value++;
 		//	osDelay(10);
 	}
 	if(targetValue < pwm_Value)
 	{
-		pwm_Value=pwm_Value-3;
+		pwm_Value--;
 		//	osDelay(10);
 	}
 

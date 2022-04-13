@@ -263,7 +263,7 @@ int main(void)
 	monitor = BH1750_init_dev_struct(&hi2c3, "monitor", true);
 	BH1750_init_dev(monitor);
 	HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
-	TIM10->CCR1=DEFAULT_PWM;
+
   /* USER CODE END 2 */
 
   /* Create the mutex(es) */
@@ -1377,11 +1377,16 @@ __weak void uartCommTask(void const * argument)
 __weak void dimmerTask(void const * argument)
 {
   /* USER CODE BEGIN dimmerTask */
+	TIM10->CCR1=DEFAULT_PWM;
   /* Infinite loop */
   for(;;)
   {
+	  monitor->poll(monitor);
+	  for(uint8_t i=0; i<50; i++)
+	  {
 	  TIM10->CCR1=SetMonitorBackligt();
-	  	osDelay(50);
+	  	osDelay(10);
+	  }
   }
   /* USER CODE END dimmerTask */
 }

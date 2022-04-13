@@ -12,9 +12,9 @@
 #include "bh1750.h"
 
 #define DEFAULT_PWM 500
-#define MIN_PWM 0
+#define MIN_PWM 100
 #define MAX_PWM 900
-#define DIMM_MULTIPLER 40
+#define DIMM_MULTIPLER 80
 
 extern BH1750_device_t* monitor;
 extern float pwmValue;
