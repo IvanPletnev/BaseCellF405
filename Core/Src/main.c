@@ -91,9 +91,12 @@ osThreadId accelHandle;
 osThreadId tempMeasHandle;
 osThreadId uartCommHandle;
 osThreadId dimmerHandle;
+osThreadId canRxHandle;
+osThreadId canTxHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
+osMutexId spiMutexHandle;
 /* USER CODE BEGIN PV */
 
 QueueHandle_t qSensorsHandle;
@@ -201,6 +204,8 @@ void accelTask(void const * argument);
 void tempMeasTask(void const * argument);
 void uartCommTask(void const * argument);
 extern void dimmerTask(void const * argument);
+extern void canRxTask(void const * argument);
+extern void canTxTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -275,6 +280,10 @@ int main(void)
   osMutexDef(I2C2Mutex);
   I2C2MutexHandle = osMutexCreate(osMutex(I2C2Mutex));
 
+  /* definition and creation of spiMutex */
+  osMutexDef(spiMutex);
+  spiMutexHandle = osMutexCreate(osMutex(spiMutex));
+
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -326,6 +335,14 @@ int main(void)
   /* definition and creation of dimmer */
   osThreadDef(dimmer, dimmerTask, osPriorityNormal, 0, 256);
   dimmerHandle = osThreadCreate(osThread(dimmer), NULL);
+
+  /* definition and creation of canRx */
+  osThreadDef(canRx, canRxTask, osPriorityNormal, 0, 256);
+  canRxHandle = osThreadCreate(osThread(canRx), NULL);
+
+  /* definition and creation of canTx */
+  osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 128);
+  canTxHandle = osThreadCreate(osThread(canTx), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
