@@ -1002,6 +1002,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : MCPINT_Pin ADXL2_INT_Pin */
+  GPIO_InitStruct.Pin = MCPINT_Pin|ADXL2_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -1014,12 +1020,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : ADXL2_INT_Pin */
-  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : FAN_2_Pin FAN_Pin GPIO__12V_3_Pin RASP_KEY_Pin
                            DHT22_1_Pin ALT_KEY_Pin */
@@ -1051,6 +1051,9 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(GERCON_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI1_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI1_IRQn);
+
   HAL_NVIC_SetPriority(EXTI4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(EXTI4_IRQn);
 
