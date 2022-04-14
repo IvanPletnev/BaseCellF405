@@ -48,3 +48,20 @@ uint16_t SetMonitorBackligt(void)
 	return pwm_Value;
 
 }
+
+void dimmerTask(void const * argument)
+{
+  /* USER CODE BEGIN dimmerTask */
+	TIM10->CCR1=DEFAULT_PWM;
+  /* Infinite loop */
+  for(;;)
+  {
+	  monitor->poll(monitor);
+	  for(uint8_t i=0; i<50; i++)
+	  {
+	  TIM10->CCR1=SetMonitorBackligt();
+	  	osDelay(10);
+	  }
+  }
+  /* USER CODE END dimmerTask */
+}
