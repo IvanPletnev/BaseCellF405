@@ -33,7 +33,7 @@
 #include "utilites.h"
 #include "eeprom.h"
 #include "dimmer.h"
-
+#include "CANSPI.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -1002,11 +1002,11 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : MCPINT_Pin ADXL2_INT_Pin */
-  GPIO_InitStruct.Pin = MCPINT_Pin|ADXL2_INT_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  /*Configure GPIO pin : MCPINT_Pin */
+  GPIO_InitStruct.Pin = MCPINT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(MCPINT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : WKUP_Pin GPIO17_Pin */
   GPIO_InitStruct.Pin = WKUP_Pin|GPIO17_Pin;
@@ -1020,6 +1020,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : ADXL2_INT_Pin */
+  GPIO_InitStruct.Pin = ADXL2_INT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(ADXL2_INT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : FAN_2_Pin FAN_Pin GPIO__12V_3_Pin RASP_KEY_Pin
                            DHT22_1_Pin ALT_KEY_Pin */
@@ -1192,6 +1198,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 	if (GPIO_Pin == GPIO_PIN_4) {
 		osSignalSet(accelHandle, 0x01);
+	}
+	if (GPIO_Pin == GPIO_PIN_1) {
+		osSignalSet (canRxHandle, 0x0A);
 	}
 
 }
