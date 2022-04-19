@@ -172,6 +172,8 @@ volatile uint32_t timeoutCnt = 0;
 volatile uint8_t raspRestartFlag = 0;
 
 
+
+
 static volatile uint8_t cvCounter = 0;
 
 float pwmValue;
@@ -1689,7 +1691,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 	/*------------------------------------------------------------------------------------------*/
 
-	if (htim->Instance == TIM8) { //Сюда мы попадаем, если 1c нет ответа от SourceSelector
+	if (htim->Instance == TIM8) { //Сюда мы попадаем, если 200ms нет ответа от SourceSelector
 		HAL_TIM_Base_Stop_IT(&htim8);
 		__HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
 		__HAL_TIM_SET_COUNTER(&htim8, 0);
@@ -1698,6 +1700,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		HAL_UART_AbortTransmit(&huart6);
 		HAL_UART_DMAStop(&huart6);
 		HAL_UART_AbortReceive(&huart6);
+		HAL_UART_DeInit(&huart6);
+		MX_USART6_UART_Init();
 		__HAL_UART_ENABLE_IT(&huart6, UART_IT_IDLE);
 		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 		for (cvCounter = 0; cvCounter < CV_RX_BUF_SIZE; cvCounter++) {
