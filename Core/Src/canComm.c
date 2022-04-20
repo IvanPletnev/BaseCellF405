@@ -230,6 +230,6 @@ void canTxTask(void const * argument){
 			i = 0;
 			osDelay(200);
 		}
-		osDelay(200);
+//		osDelay(200);
 	}
 }
