@@ -191,12 +191,13 @@ void canRxTask(void const * argument){
 	for (;;){
 		evt = osSignalWait(0x0A, osWaitForever);
 		if (evt.status == osEventSignal) {
-			if (osMutexWait(spiMutexHandle, 5) == osOK) {
+			if (osMutexWait(spiMutexHandle, 1) == osOK) {
 				CANSPI_Receive(&canRxMessage);
 				MCP2515_BitModify(MCP2515_CANINTF, 255, 0);
 				osMutexRelease(spiMutexHandle);
+				obdMessageParcer(&canRxMessage, &obdParameters);
 			}
-			obdMessageParcer(&canRxMessage, &obdParameters);
+
 			++canPacketCounter;
 			osThreadYield();
 		}
