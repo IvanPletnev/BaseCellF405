@@ -1342,7 +1342,7 @@ void tempMeasTask(void const * argument)
 	/* Infinite loop */
 	for (;;) {
 
-		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 50);
+		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 5);
 
 		if (tempMutexStatus0 == osOK) {
 			tempSensorState = TLA2024_Read(0, buffer0);
