@@ -171,9 +171,6 @@ volatile uint8_t timeOutFlag = 0;
 volatile uint32_t timeoutCnt = 0;
 volatile uint8_t raspRestartFlag = 0;
 
-
-
-
 static volatile uint8_t cvCounter = 0;
 
 float pwmValue;
@@ -1303,12 +1300,10 @@ void accelTask(void const * argument)
 			HAL_TIM_PWM_Start(&htim3, TIM_CHANNEL_1);
 			osDelay(200);
 			HAL_TIM_PWM_Stop(&htim3, TIM_CHANNEL_1);
-
 			sensors->source = ADXL_TASK;
 			sensors->size = ADXL_SIZE;
 			memcpy (sensors->payload, buffer, 6);
 			if (xQueueSend(qSensorsHandle, (void*) &sensors, 1) != pdTRUE) {
-				queueStatusByte |= 0x20;
 			}
 		}
 	}
@@ -1398,8 +1393,7 @@ void tempMeasTask(void const * argument)
 		memcpy (sensors->payload, buffer0, 2);
 		memcpy (sensors->payload+4, buffer2, 2);
 		if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
-			queueStatusByte |= 0x01;
-			++queueErrorCnt;
+
 		}
 
 		if (sensorsOnFlag) {
@@ -1466,8 +1460,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			sensor->size = CV_REQ_SIZE;
 			memcpy((uint8_t*)sensor->payload, request, CV_REQ_SIZE);
 			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE){
-				queueStatusByte |= 0x40;
-				++queueErrorCnt;
 			}
 			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
@@ -1531,8 +1523,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[4] = get_check_sum((uint8_t*)(sensor->payload), CV_REQ_SIZE);
 				sensor->payload[5] = 0x55;
 				if (xQueueSendFromISR(qSensorsHandle, (void *) &sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
-					queueStatusByte |= 0x80;
-					++queueErrorCnt;
 				}
 				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 				if (breaksStateTelem) {
@@ -1569,7 +1559,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[5] = 0x55;
 				allConsumersDisable();
 				if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
-					++queueErrorCnt;
 				}
 				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
@@ -1603,7 +1592,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 				sensor->payload[5] = 0x55;
 				allConsumersDisable();
 				if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor, &xHigherPriorityTaskWoken) != pdTRUE) {
-					++queueErrorCnt;
 				}
 				portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 				HAL_GPIO_WritePin(RASP_KEY_GPIO_Port, RASP_KEY_Pin, RESET);
@@ -1670,8 +1658,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		sensor1->payload[6] = get_check_sum((uint8_t*)sensor1->payload, 8);
 		memcpy((uint8_t*)sensor1->payload, cvTimeoutResponse, 8);
 		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor1, &xHigherPriorityTaskWoken) != pdTRUE) {
-			++queueErrorCnt;
-			queueStatusByte1 |= 0x01;
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 	}
@@ -1696,7 +1682,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		}
 		queueStatusByte1 |= 0x80;
 	}
-
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM6) {
