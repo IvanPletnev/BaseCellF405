@@ -1326,11 +1326,9 @@ void tempMeasTask(void const * argument)
 {
   /* USER CODE BEGIN tempMeasTask */
 	static uint8_t buffer0[2] = {0};
-	static uint8_t buffer1[2] = {0};
 	static uint8_t buffer2[2] = {0};
 
 	int16_t temperature0 = 0;
-	int16_t temperature1 = 0;
 	int16_t temperature2 = 0;
 	static uint8_t fanState = 0;
 	osStatus tempMutexStatus0;
@@ -1342,33 +1340,25 @@ void tempMeasTask(void const * argument)
 	/* Infinite loop */
 	for (;;) {
 
-		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 5);
+		tempMutexStatus0 = osMutexWait(I2C2MutexHandle, 1);
 
 		if (tempMutexStatus0 == osOK) {
 			tempSensorState = TLA2024_Read(0, buffer0);
-			TLA2024_Read(1, buffer1);
 			TLA2024_Read(2, buffer2);
 			osMutexRelease(I2C2MutexHandle);
 		}
 
 		temperature0 = (int16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
-		temperature1 = (int16_t)buffer1[0] << 8;
-		temperature1 |= buffer1[1];
 		temperature2 = (int16_t)buffer2[0] << 8;
 		temperature2 |= buffer2[1];
 
 		debugTemp0 = temperature0;
-		debugTemp1 = temperature1;
 		debugTemp2 = temperature2;
 
 		if (temperature0 < 0) {
 			temperature0 = -temperature0;
 			temperature0 |= 0x8000;
-		}
-		if (temperature1 < 0) {
-			temperature1 = -temperature1;
-			temperature1 |= 0x8000;
 		}
 
 		if (temperature2 < 0) {
@@ -1378,8 +1368,6 @@ void tempMeasTask(void const * argument)
 
 		buffer0[0] = (uint8_t)((temperature0 & 0xFF00) >> 8);
 		buffer0[1] = (uint8_t)(temperature0 & 0x00FF);
-		buffer1[0] = (uint8_t)((temperature1 & 0xFF00) >> 8);
-		buffer1[1] = (uint8_t)(temperature1 & 0x00FF);
 		buffer2[0] = (uint8_t)((temperature2 & 0xFF00) >> 8);
 		buffer2[1] = (uint8_t)(temperature2 & 0x00FF);
 
@@ -1408,7 +1396,6 @@ void tempMeasTask(void const * argument)
 		sensors->size = TLA2024_SIZE;
 		memset(sensors->payload, 0, 16);
 		memcpy (sensors->payload, buffer0, 2);
-		memcpy (sensors->payload+2, buffer1, 2);
 		memcpy (sensors->payload+4, buffer2, 2);
 		if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
 			queueStatusByte |= 0x01;
