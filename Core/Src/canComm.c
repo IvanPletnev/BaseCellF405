@@ -18,7 +18,8 @@ const uint8_t canObdIdSet[] = {COOLANT_TEMP_REQ, RPM, SPEED, TIME_FROM_START, CH
 canStatusByte0 can_status_byte_0 = {0};
 canStatusByte1 can_status_byte_1 = {0};
 canStatusByte2 can_status_byte_2 = {0};
-uint8_t brakeForce = 0;
+canStatusByte3 can_status_byte_3 = {0};
+
 
 extern osMutexId spiMutexHandle;
 
@@ -68,7 +69,7 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 
 	case 0x541: {
 
-		if ((message->frame.data0 & 0x01) && (message->frame.data1 & 0x40)) {
+		if (message->frame.data1 & 0x40) {
 			can_status_byte_0.ignition = 1;
 		} else {
 			can_status_byte_0.ignition = 0;
@@ -130,6 +131,14 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 			can_status_byte_2.driverSeatBelt = 0;
 		}
 
+		if (message->frame.data7 & 0x10) {
+			can_status_byte_2.handBrake = 1;
+		} else {
+			can_status_byte_2.handBrake = 0;
+		}
+
+		can_status_byte_3.ignitionLock = message->frame.data0 & 0x07;
+
 		break;
 	}
 
@@ -170,9 +179,13 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 
 	case 0x220: {
 
-		brakeForce = (uint16_t)(message->frame.data4 << 8) | (uint16_t)(message->frame.data3);
+		obdParameters.brakeForce = (uint16_t)(message->frame.data4 << 8) | (uint16_t)(message->frame.data3);
 		break;
 	}
+
+	case 0x2B0:
+		obdParameters.steeringAngle = (int16_t) ((uint16_t)(message->frame.data1 << 8) | (uint16_t) (message->frame.data0));
+		break;
 
 	default:
 		return 0;
@@ -182,6 +195,7 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 
 
 void canRxTask(void const * argument){
+
 	osDelay(50);
 	MCP2515_Reset();
 	CANSPI_Initialize();

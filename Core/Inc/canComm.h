@@ -51,6 +51,8 @@ typedef struct _obdParamType {
 	uint8_t fuelLevel;
 	int8_t intakeAirTemp;
 	int8_t engineOilTemp;
+	uint16_t brakeForce;
+	int16_t steeringAngle;
 
 } __attribute__((packed)) obdParamType;
 
@@ -92,6 +94,13 @@ typedef union {
 	uint8_t canByte2;
 } canStatusByte2;
 
+typedef union {
+	struct{
+		unsigned ignitionLock				: 3;
+		unsigned reserved					: 5;
+	};
+	uint8_t canByte3;
+} canStatusByte3;
 
 
 

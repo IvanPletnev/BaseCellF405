@@ -51,7 +51,7 @@ bool CANSPI_Initialize(void) {
 	RXF0reg.RXF0EID8 = 0x00;
 	RXF0reg.RXF0EID0 = 0x00;
 
-	RXF1reg.RXF1SIDH = 0xFD;
+	RXF1reg.RXF1SIDH = 0x56;
 	RXF1reg.RXF1SIDL = 0x00;      //Exntended Filter
 	RXF1reg.RXF1EID8 = 0x00;
 	RXF1reg.RXF1EID0 = 0x00;
