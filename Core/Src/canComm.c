@@ -13,7 +13,7 @@ uCAN_MSG canTxMessage;
 obdParamType obdParameters;
 uint32_t canPacketCounter = 0;
 const uint8_t canObdIdSet[] = {COOLANT_TEMP_REQ, RPM, SPEED, TIME_FROM_START, CHECK_LAMP_DIST,
-		ONBOARD_VOLTAGE, ENGINE_LOAD, FUEL_LEVEL, INTAKE_AIR_TEMP, ENGINE_OIL_TEMP};
+		ONBOARD_VOLTAGE, ENGINE_LOAD, FUEL_LEVEL, INTAKE_AIR_TEMP};
 
 canStatusByte0 can_status_byte_0 = {0};
 canStatusByte1 can_status_byte_1 = {0};
@@ -58,8 +58,6 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 		case INTAKE_AIR_TEMP:
 			param->intakeAirTemp = message->frame.data3 - 40;
 			break;
-		case ENGINE_OIL_TEMP:
-			param->engineOilTemp = message->frame.data3 - 40;
 		default:
 			return 0;
 		}
@@ -208,7 +206,9 @@ void canRxTask(void const * argument){
 				CANSPI_Receive(&canRxMessage);
 				MCP2515_BitModify(MCP2515_CANINTF, 255, 0);
 				osMutexRelease(spiMutexHandle);
+				taskENTER_CRITICAL();
 				obdMessageParcer(&canRxMessage, &obdParameters);
+				taskEXIT_CRITICAL();
 			}
 
 			++canPacketCounter;
