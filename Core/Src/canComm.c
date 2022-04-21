@@ -20,7 +20,6 @@ canStatusByte1 can_status_byte_1 = {0};
 canStatusByte2 can_status_byte_2 = {0};
 canStatusByte3 can_status_byte_3 = {0};
 
-
 extern osMutexId spiMutexHandle;
 
 
