@@ -1649,7 +1649,6 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	
 /*------------------------------------------------------------------------------------------*/
 
-
 	if (htim->Instance == TIM13) { //Таймаут команды управления SourceSelector
 		HAL_TIM_Base_Stop_IT(&htim13);
 		__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);

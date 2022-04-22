@@ -53,6 +53,7 @@ typedef struct _obdParamType {
 	int8_t engineOilTemp;
 	uint16_t brakeForce;
 	int16_t steeringAngle;
+	uint8_t throttleLevel;
 
 } __attribute__((packed)) obdParamType;
 

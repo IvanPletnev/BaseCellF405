@@ -6,6 +6,7 @@
  */
 
 #include "canComm.h"
+#include "main.h"
 
 
 uCAN_MSG canRxMessage;
@@ -15,13 +16,12 @@ uint32_t canPacketCounter = 0;
 const uint8_t canObdIdSet[] = {COOLANT_TEMP_REQ, RPM, SPEED, TIME_FROM_START, CHECK_LAMP_DIST,
 		ONBOARD_VOLTAGE, ENGINE_LOAD, FUEL_LEVEL, INTAKE_AIR_TEMP};
 
-canStatusByte0 can_status_byte_0 = {0};
-canStatusByte1 can_status_byte_1 = {0};
-canStatusByte2 can_status_byte_2 = {0};
-canStatusByte3 can_status_byte_3 = {0};
+volatile canStatusByte0 can_status_byte_0 = {0};
+volatile canStatusByte1 can_status_byte_1 = {0};
+volatile canStatusByte2 can_status_byte_2 = {0};
+volatile canStatusByte3 can_status_byte_3 = {0};
 
 extern osMutexId spiMutexHandle;
-
 
 
 uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
@@ -139,28 +139,35 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 		break;
 	}
 
-	case 0x553: {
+	case 0x329: {
 
-		if (message->frame.data3 & 0x01) {
-			can_status_byte_2.rightRearDoor = 1;
-		} else {
-			can_status_byte_2.rightRearDoor = 0;
-		}
-
-		if (message->frame.data2 & 0x80) {
-			can_status_byte_2.leftRearDoor = 1;
-		} else {
-			can_status_byte_2.leftRearDoor = 0;
-		}
-
-		if (message->frame.data2 & 0x40) {
-			can_status_byte_1.parkingLights = 1;
-		} else {
-			can_status_byte_1.parkingLights = 0;
-		}
+		param->throttleLevel = message->frame.data6;
 
 		break;
 	}
+
+//	case 0x553: {
+//
+//		if (message->frame.data3 & 0x01) {
+//			can_status_byte_2.rightRearDoor = 1;
+//		} else {
+//			can_status_byte_2.rightRearDoor = 0;
+//		}
+//
+//		if (message->frame.data2 & 0x80) {
+//			can_status_byte_2.leftRearDoor = 1;
+//		} else {
+//			can_status_byte_2.leftRearDoor = 0;
+//		}
+//
+//		if (message->frame.data2 & 0x40) {
+//			can_status_byte_1.parkingLights = 1;
+//		} else {
+//			can_status_byte_1.parkingLights = 0;
+//		}
+//
+//		break;
+//	}
 
 	case 0x260: {
 
@@ -176,12 +183,12 @@ uint8_t obdMessageParcer(uCAN_MSG *message, obdParamType *param) {
 
 	case 0x220: {
 
-		obdParameters.brakeForce = (uint16_t)(message->frame.data4 << 8) | (uint16_t)(message->frame.data3);
+		param->brakeForce = (uint16_t)(message->frame.data4 << 8) | (uint16_t)(message->frame.data3);
 		break;
 	}
 
 	case 0x2B0:
-		obdParameters.steeringAngle = (int16_t) ((uint16_t)(message->frame.data1 << 8) | (uint16_t) (message->frame.data0));
+		param->steeringAngle = (int16_t) ((uint16_t)(message->frame.data1 << 8) | (uint16_t) (message->frame.data0));
 		break;
 
 	default:
@@ -208,10 +215,10 @@ void canRxTask(void const * argument){
 				osMutexRelease(spiMutexHandle);
 				taskENTER_CRITICAL();
 				obdMessageParcer(&canRxMessage, &obdParameters);
+				++canPacketCounter;
 				taskEXIT_CRITICAL();
 			}
 
-			++canPacketCounter;
 			osThreadYield();
 		}
 	}
@@ -231,6 +238,7 @@ void canTxTask(void const * argument){
 	canTxMessage.frame.data6 = 0;
 	canTxMessage.frame.data7 = 0;
 	for (;;){
+
 		if (i < sizeof(canObdIdSet)) {
 			canTxMessage.frame.data2 = canObdIdSet[i];
 			if (osMutexWait(spiMutexHandle, 5) == osOK) {

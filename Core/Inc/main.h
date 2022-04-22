@@ -33,6 +33,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "cmsis_os.h"
+#include "canComm.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -156,6 +157,8 @@ extern __IO uint32_t queueErrorCnt;
 #define	BL_AUTO_CONTROL_SRC	6
 #define	CV_REQ_SOURCE		7
 #define CV_RESP_SOURCE		8
+#define CAN_SOURCE			9
+
 #define CV_RESP_SIZE		8
 #define RESERVE_SIZE		3
 #define CV_STATUS_SIZE		2
@@ -166,6 +169,7 @@ extern __IO uint32_t queueErrorCnt;
 #define DHT22_SIZE			12
 #define	TLA2024_SIZE		6
 #define	CV_SIZE				16
+#define RASP_RESP_SIZE		8
 #define GERCON_SIZE			1
 #define ENGINE_STATE_SIZE	1
 #define DISCRETE_IN_SIZE	2
@@ -175,15 +179,17 @@ extern __IO uint32_t queueErrorCnt;
 #define PACKET_FOOTER		0x55
 #define PACK_HEADER_SIZE	3 //0xAA + PACK_ID + SIZE
 #define PACK_FOOTER_SIZE	2 //checksum + 0x55
+#define CAN_PACK_SIZE		PACK_HEADER_SIZE + sizeof (obdParamType) + 4 + PACK_FOOTER_SIZE
 #define STD_PACK_ID			1
 #define	ADXL_PACK_ID		2
 #define RASP_IN_PACK_ID		3
 #define BL_OUT_PACK_ID		4
 #define RASP_RESP_PACK_ID	0x0F
-#define RASP_RESP_SIZE		8
 #define CV_PACK_ID			5
 #define CV_REQ_PACK_ID		7
 #define CV_RESP_PACK_ID		8
+#define CAN_PACK_ID			9
+
 #define CV_REQ_SIZE			6
 #define	APDS_OFFSET			3
 #define TEMP_OFFSET			APDS_SIZE+PACK_HEADER_SIZE //19
