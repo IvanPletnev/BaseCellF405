@@ -395,10 +395,10 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			destTempBuf[2] = CV_REQ_SIZE;
 			destTempBuf[3] = CMD_BACKLIGHT_ON;
 			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
-			if (backLightOffFlag) {
-				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
-				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
-			}
+//			if (backLightOffFlag) {
+//				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
+//				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
+//			}
 			setTxMode(6);
 			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);

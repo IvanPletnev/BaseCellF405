@@ -1510,7 +1510,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	case 1:
 		if ((gpio17State = HAL_GPIO_ReadPin(GPIO17_GPIO_Port, GPIO17_Pin)) == GPIO_PIN_RESET) {
 
-			if (raspOffCounter < 50) {
+			if (raspOffCounter < 5) {
 				raspOffCounter++;
 			} else {
 				raspOffCounter = 0;
@@ -1599,6 +1599,12 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 			}
 		} else {
 			raspOffCounter = 0;
+			if (stateChangeCounter < 100) {
+				stateChangeCounter++;
+			} else {
+				stateChangeCounter = 0;
+				raspOffState = 0;
+			}
 		}
 		break;
 	}
