@@ -233,13 +233,13 @@ void MCP2515_BitModify(uint8_t address, uint8_t mask, uint8_t data)
 /* SPI Tx Wrapper 함수 */
 static void SPI_Tx(uint8_t data)
 {
-  HAL_SPI_Transmit(SPI_CAN, &data, 1, SPI_TIMEOUT);    
+  HAL_SPI_Transmit(SPI_CAN, &data, 1, SPI_TIMEOUT);
 }
 
 /* SPI Tx Wrapper 함수 */
 static void SPI_TxBuffer(uint8_t *buffer, uint8_t length)
 {
-  HAL_SPI_Transmit(SPI_CAN, buffer, length, SPI_TIMEOUT);    
+  HAL_SPI_Transmit(SPI_CAN, buffer, length, SPI_TIMEOUT);
 }
 
 /* SPI Rx Wrapper 함수 */

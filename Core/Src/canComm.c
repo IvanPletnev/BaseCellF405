@@ -218,7 +218,6 @@ void canRxTask(void const * argument){
 				++canPacketCounter;
 				taskEXIT_CRITICAL();
 			}
-
 			osThreadYield();
 		}
 	}
