@@ -59,7 +59,7 @@ typedef struct os_mailQ_cb {
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
-#define MAIL_SIZE			8
+#define MAIL_SIZE			10
 
 extern QueueHandle_t qSensorsHandle;
 extern uint8_t qSensorsBuffer[ MAIL_SIZE * sizeof( sensorsData ) ];
@@ -179,7 +179,8 @@ extern __IO uint32_t queueErrorCnt;
 #define PACKET_FOOTER		0x55
 #define PACK_HEADER_SIZE	3 //0xAA + PACK_ID + SIZE
 #define PACK_FOOTER_SIZE	2 //checksum + 0x55
-#define CAN_PACK_SIZE		PACK_HEADER_SIZE + sizeof (obdParamType) + 4 + PACK_FOOTER_SIZE
+#define CAN_SIZE			sizeof (obdParamType) + 4
+#define CAN_PACK_SIZE		sizeof (obdParamType) + 4 + PACK_HEADER_SIZE + PACK_FOOTER_SIZE
 #define STD_PACK_ID			1
 #define	ADXL_PACK_ID		2
 #define RASP_IN_PACK_ID		3

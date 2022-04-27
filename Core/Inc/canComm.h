@@ -41,7 +41,7 @@ void canTxTask(void const * argument);
 //}onOffState;
 
 typedef struct _obdParamType {
-	int16_t coolantTemp;
+	int8_t coolantTemp;
 	uint16_t rpm;
 	uint8_t speed;
 	uint16_t timeFromeStart;

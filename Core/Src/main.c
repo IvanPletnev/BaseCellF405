@@ -340,7 +340,7 @@ int main(void)
   canRxHandle = osThreadCreate(osThread(canRx), NULL);
 
   /* definition and creation of canTx */
-  osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 128);
+  osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 256);
   canTxHandle = osThreadCreate(osThread(canTx), NULL);
 
   /* USER CODE BEGIN RTOS_THREADS */

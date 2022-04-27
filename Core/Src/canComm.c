@@ -7,7 +7,7 @@
 
 #include "canComm.h"
 #include "main.h"
-
+#include "string.h"
 
 uCAN_MSG canRxMessage;
 uCAN_MSG canTxMessage;
@@ -226,6 +226,10 @@ void canRxTask(void const * argument){
 void canTxTask(void const * argument){
 
 	uint8_t i = 0;
+	sensorsData xSensors;
+	sensorsData *sensors = &xSensors;
+	uint8_t offset = sizeof (obdParameters);
+
 	canTxMessage.frame.idType = dSTANDARD_CAN_MSG_ID_2_0B;
 	canTxMessage.frame.id = 0x7E0;
 	canTxMessage.frame.dlc = 8;
@@ -236,6 +240,7 @@ void canTxTask(void const * argument){
 	canTxMessage.frame.data5 = 0;
 	canTxMessage.frame.data6 = 0;
 	canTxMessage.frame.data7 = 0;
+
 	for (;;){
 
 		if (i < sizeof(canObdIdSet)) {
@@ -248,6 +253,17 @@ void canTxTask(void const * argument){
 			i++;
 			osDelay(10);
 		} else {
+			taskENTER_CRITICAL();
+			sensors->source = CAN_SOURCE;
+			sensors->size = CAN_SIZE;
+			memcpy (sensors->payload, (uint8_t*) & obdParameters, sizeof (obdParameters));
+			sensors->payload[offset] = can_status_byte_0.canByte0;
+			sensors->payload[offset + 1] = can_status_byte_1.canByte1;
+			sensors->payload[offset + 2] = can_status_byte_2.canByte2;
+			sensors->payload[offset + 3] = can_status_byte_3.canByte3;
+			taskEXIT_CRITICAL();
+			if (xQueueSend(qSensorsHandle, (void*)&sensors, 1) != pdTRUE) {
+			}
 			i = 0;
 			osDelay(100);
 		}

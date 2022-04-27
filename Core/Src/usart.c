@@ -490,6 +490,7 @@ void uartCommTask(void const *argument) {
 	uint8_t cvFirmwareVersion0 = 0;
 	uint8_t cvFirmwareVersion1 = 0;
 	uint8_t raspTxBuf[STD_PACK_SIZE] = {0};
+	uint8_t canBuf[CAN_PACK_SIZE] = {0};
 
 	uint16_t packetCounter = 0;
 //	uint8_t destTempBuf[6] = {0};
@@ -551,6 +552,18 @@ void uartCommTask(void const *argument) {
 				case DHT22_TASK_SOURCE: // пакет от датчиков температуры и влажности
 					memcpy(raspTxBuf + DHT22_OFFSET, sensors->payload,
 							DHT22_SIZE);
+					break;
+
+				case CAN_SOURCE:
+					taskENTER_CRITICAL();
+					canBuf[0] = 0xAA;
+					canBuf[1] = CAN_PACK_ID;
+					canBuf[2] = CAN_PACK_SIZE;
+					memcpy(canBuf + PACK_HEADER_SIZE, sensors->payload, CAN_SIZE);
+					canBuf[CAN_PACK_SIZE-2] = get_check_sum(canBuf, CAN_PACK_SIZE);
+					canBuf[CAN_PACK_SIZE-1] = 0x55;
+					taskEXIT_CRITICAL();
+					HAL_UART_Transmit_DMA(&huart1, canBuf, CAN_PACK_SIZE);
 					break;
 
 				case CV_USART_SRC: //в порт пришел пакет от ячейки управления питанием
