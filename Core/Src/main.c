@@ -34,6 +34,7 @@
 #include "eeprom.h"
 #include "dimmer.h"
 #include "CANSPI.h"
+#include "current_voltage.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -93,6 +94,7 @@ osThreadId uartCommHandle;
 osThreadId dimmerHandle;
 osThreadId canRxHandle;
 osThreadId canTxHandle;
+osThreadId cvHandle;
 osMessageQId onOffQueueHandle;
 osMessageQId watchDogQHandle;
 osMutexId I2C2MutexHandle;
@@ -205,6 +207,7 @@ void uartCommTask(void const * argument);
 extern void dimmerTask(void const * argument);
 extern void canRxTask(void const * argument);
 extern void canTxTask(void const * argument);
+extern void cvTask(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -343,6 +346,10 @@ int main(void)
   osThreadDef(canTx, canTxTask, osPriorityNormal, 0, 256);
   canTxHandle = osThreadCreate(osThread(canTx), NULL);
 
+  /* definition and creation of cv */
+  osThreadDef(cv, cvTask, osPriorityNormal, 0, 256);
+  cvHandle = osThreadCreate(osThread(cv), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -457,7 +464,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 400000;
+  hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;

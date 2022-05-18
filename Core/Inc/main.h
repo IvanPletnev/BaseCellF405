@@ -158,10 +158,11 @@ extern __IO uint32_t queueErrorCnt;
 #define	CV_REQ_SOURCE		7
 #define CV_RESP_SOURCE		8
 #define CAN_SOURCE			9
-
+#define	CV_INA219_SOURCE	10
 #define CV_RESP_SIZE		8
 #define RESERVE_SIZE		3
 #define CV_STATUS_SIZE		2
+#define CV_INA219_SIZE		12
 #define MIS_STATUS_SIZE		2
 #define BL_AUTO_CTL_SIZE	12
 #define	APDS_SIZE			16
@@ -192,6 +193,8 @@ extern __IO uint32_t queueErrorCnt;
 #define CAN_PACK_ID			9
 
 #define CV_REQ_SIZE			6
+#define BAT2_STATE_OFFSET	50
+#define BAT2_ERR_OFFSET		52
 #define	APDS_OFFSET			3
 #define TEMP_OFFSET			APDS_SIZE+PACK_HEADER_SIZE //19
 #define DHT22_OFFSET		APDS_SIZE+TLA2024_SIZE+PACK_HEADER_SIZE //25
