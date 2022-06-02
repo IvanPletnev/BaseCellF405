@@ -12,19 +12,19 @@
 uCAN_MSG canRxMessage;
 uCAN_MSG canTxMessage;
 obdParamType obdParameters = {
-//		0
-		.coolantTemp = 70,
-		.rpm = 2000,
-		.speed = 50,
-		.timeFromeStart = 600,
-		.chekLampDist = 1000,
-		.onboardVoltage = 14500,
-		.engineLoad = 25,
-		.fuelLevel = 10,
-		.intakeAirTemp = 40,
-		.brakeForce = 3000,
-		.steeringAngle = -2500,
-		.throttleLevel = 60
+		0
+//		.coolantTemp = 70,
+//		.rpm = 2000,
+//		.speed = 50,
+//		.timeFromeStart = 600,
+//		.chekLampDist = 1000,
+//		.onboardVoltage = 14500,
+//		.engineLoad = 25,
+//		.fuelLevel = 10,
+//		.intakeAirTemp = 40,
+//		.brakeForce = 3000,
+//		.steeringAngle = -2500,
+//		.throttleLevel = 60
 };
 
 uint32_t canPacketCounter = 0;
@@ -32,36 +32,36 @@ const uint8_t canObdIdSet[] = {COOLANT_TEMP_REQ, RPM, SPEED, TIME_FROM_START, CH
 		ONBOARD_VOLTAGE, ENGINE_LOAD, FUEL_LEVEL, INTAKE_AIR_TEMP};
 
 volatile canStatusByte0 can_status_byte_0 = {
-//		0
-		.ignition = 1,
-		.engineStatus = 1,
-		.starterStatus = 0,
-		.windScreenVipers = 2,
+		0
+//		.ignition = 1,
+//		.engineStatus = 1,
+//		.starterStatus = 0,
+//		.windScreenVipers = 2,
 };
 volatile canStatusByte1 can_status_byte_1 = {
-//		0
-		.parkingLights = 1,
-		.dippedHeadLights = 0,
-		.highBeamHeadlights = 1,
-		.directionIndicatorRight = 0,
-		.directionIndicatorLeft = 1,
-		.hazardLights = 1,
+		0
+//		.parkingLights = 1,
+//		.dippedHeadLights = 0,
+//		.highBeamHeadlights = 1,
+//		.directionIndicatorRight = 0,
+//		.directionIndicatorLeft = 1,
+//		.hazardLights = 1,
 };
 volatile canStatusByte2 can_status_byte_2 = {
-//		0
-		.ignitionLock = 3,
+		0
+//		.ignitionLock = 3,
 
 };
 
 volatile canStatusByte3 can_status_byte_3 = {
-//		0
-		.driverDoor = 1,
-		.rightFrontDoor = 1,
-		.leftRearDoor = 0,
-		.rightRearDoor = 0,
-		.handBrake = 1,
-		.driverSeatBelt = 1,
-		.trunk = 1
+		0
+//		.driverDoor = 1,
+//		.rightFrontDoor = 1,
+//		.leftRearDoor = 0,
+//		.rightRearDoor = 0,
+//		.handBrake = 1,
+//		.driverSeatBelt = 1,
+//		.trunk = 1
 };
 
 extern osMutexId spiMutexHandle;
