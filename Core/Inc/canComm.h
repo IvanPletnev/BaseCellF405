@@ -73,13 +73,21 @@ typedef union {
 		unsigned parkingLights				: 1;
 		unsigned dippedHeadLights			: 1;
 		unsigned highBeamHeadlights			: 1;
-		unsigned directionIndicatorRight	: 1;
 		unsigned directionIndicatorLeft		: 1;
+		unsigned directionIndicatorRight	: 1;
 		unsigned hazardLights				: 1;
 		unsigned reserved					: 2;
 	};
 	uint8_t canByte1;
 } canStatusByte1;
+
+typedef union {
+	struct{
+		unsigned ignitionLock				: 3;
+		unsigned reserved					: 5;
+	};
+	uint8_t canByte2;
+} canStatusByte2;
 
 typedef union {
 	struct{
@@ -92,16 +100,10 @@ typedef union {
 		unsigned trunk						: 1;
 		unsigned reserved					: 1;
 	};
-	uint8_t canByte2;
-} canStatusByte2;
-
-typedef union {
-	struct{
-		unsigned ignitionLock				: 3;
-		unsigned reserved					: 5;
-	};
 	uint8_t canByte3;
 } canStatusByte3;
+
+
 
 
 
