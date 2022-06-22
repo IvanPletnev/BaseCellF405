@@ -19,6 +19,10 @@ extern UART_HandleTypeDef huart6;
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern uint8_t raspRxBuf[RASP_RX_BUF_SIZE];
+
+uint8_t destTempBuf[16] = {0};
+uint8_t cmdTempBuf[16] = {0};
+
 extern uint8_t gerconState;
 extern osMessageQId onOffQueueHandle;
 extern TIM_HandleTypeDef htim7;
@@ -74,78 +78,14 @@ HeapStats_t stats;
 void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 
 	BaseType_t xHigherPriorityTaskWoken = 0;
-	uint8_t state = 0;
-
-	HAL_UART_DMAStop(huart);
-	HAL_UART_AbortReceive(huart);
-
-	if (huart->Instance == USART6) {
-
-			sensors_->size = CV_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart6_rx);
-
-			switch (state) {
-
-			case 0:
-
-				if (currentVoltageRxBuf[0] == 0xAA){
-					state++;
-				} else {
-					state = 0;
-					break;
-				}
-
-			case 1:
-
-				if (sensors_->size != currentVoltageRxBuf[2]) {
-					state = 0;
-					break;
-				} else {
-					state++;
-				}
-
-			case 2:
-
-				switch (currentVoltageRxBuf[1]) {
-
-				case CV_PACK_ID:
-					HAL_TIM_Base_Stop_IT(&htim8);
-					__HAL_TIM_SET_COUNTER(&htim8, 0);
-					queueStatusByte1 &= ~0x80;
-					sensors_->source = CV_USART_SRC;
-					memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
-					break;
-
-				case RASP_RESP_PACK_ID:
-					sensors_->source = CV_RESP_SOURCE;
-					memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RESP_SIZE);
-					HAL_TIM_Base_Stop_IT(&htim13);
-					__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
-					__HAL_TIM_SET_COUNTER(&htim13, 0);
-					break;
-
-				default:
-					state = 0;
-					break;
-				}
-				break;
-			}
-
-			if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
-
-			}
-			portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
-
-		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
-		state = 0;
-	}
 
 	if (huart->Instance == USART1) {
+		HAL_UART_DMAStop(huart);
 		sensors_->size = RASP_RX_BUF_SIZE - __HAL_DMA_GET_COUNTER(&hdma_usart1_rx);
 		sensors_->source = RASP_UART_SRC;
 		memcpy ((uint8_t*)sensors_->payload, raspRxBuf, sensors_->size);
 
 		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
-
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
 
@@ -154,9 +94,11 @@ void USER_UART_IDLECallback(UART_HandleTypeDef *huart) {
 }
 
 void USER_UART_IRQHandler(UART_HandleTypeDef *huart) {
-	if ( __HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET) {
-		__HAL_UART_CLEAR_IDLEFLAG(huart);
-		USER_UART_IDLECallback(huart);
+	if (huart->Instance == USART1){
+		if ( __HAL_UART_GET_FLAG(huart, UART_FLAG_IDLE) != RESET) {
+			__HAL_UART_CLEAR_IDLEFLAG(huart);
+			USER_UART_IDLECallback(huart);
+		}
 	}
 }
 
@@ -176,7 +118,6 @@ void sendRespToRasp(uint8_t cmd, uint8_t response) {
 
 usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
-	uint8_t destTempBuf[16] = {0};
 	uint8_t state = 0;
 	uint8_t i;
 
@@ -187,6 +128,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 		if (source[0] == 0xAA) {
 			state++;
 			destTempBuf[0] = 0xAA;
+			cmdTempBuf[0] = 0xAA;
 		} else {
 			return WRONG_HEADER;
 		}
@@ -195,8 +137,11 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 		if (source[1] == RASP_IN_PACK_ID) {
 			state++;
 			destTempBuf[1] = BL_OUT_PACK_ID;
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
 			destTempBuf[2] = size = source[2];
+			cmdTempBuf[2] = size = source[2];
 			destTempBuf[size-1] = 0x55;
+			cmdTempBuf[size-1] = 0x55;
 		} else {
 			return WRONG_PACK_ID;
 		}
@@ -312,12 +257,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_PWR_OFF:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_PWR_OFF;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_PWR_OFF;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 			resetFlag = 1;
 			osMessagePut(onOffQueueHandle, ENGINE_STOP_ID, 0);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
@@ -327,12 +272,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_CHARGER_OFF:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_CHARGER_OFF;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_CHARGER_OFF;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim13, 0);
 			HAL_TIM_Base_Start_IT(&htim13);
@@ -340,12 +285,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_BACKLIGHT_OFF:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_BACKLIGHT_OFF;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_BACKLIGHT_OFF;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 
 			destTempBuf[1] = BL_OUT_PACK_ID;
 			destTempBuf[2] = 12;
@@ -378,12 +323,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_CHARGER_ON:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_CHARGER_ON;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_CHARGER_ON;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim7, 0);
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -391,16 +336,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_BACKLIGHT_ON:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_BACKLIGHT_ON;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
-//			if (backLightOffFlag) {
-//				memcpy((uint8_t*)brightnessValues, (uint8_t*) brightnessValuesBackUp, 4);
-//				memcpy((uint8_t*)autoBacklightflags, (uint8_t*)autoBacklightflagsBackUp , 4);
-//			}
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_BACKLIGHT_ON;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim7, 0);
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -408,12 +349,12 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 
 		case CMD_PWR_ON:
 
-			destTempBuf[1] = CV_REQ_PACK_ID;
-			destTempBuf[2] = CV_REQ_SIZE;
-			destTempBuf[3] = CMD_PWR_ON;
-			destTempBuf[4] = get_check_sum(destTempBuf, CV_REQ_SIZE);
+			cmdTempBuf[1] = CV_REQ_PACK_ID;
+			cmdTempBuf[2] = CV_REQ_SIZE;
+			cmdTempBuf[3] = CMD_PWR_ON;
+			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
-			HAL_UART_Transmit_DMA(&huart6, destTempBuf, CV_REQ_SIZE);
+			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
 			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
 			__HAL_TIM_SET_COUNTER(&htim7, 0);
 			HAL_TIM_Base_Start_IT(&htim7);
@@ -451,7 +392,6 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 		}
 	break;
 	}
-	memset (destTempBuf, 0,16);
 	return ERR_OK;
 }
 
@@ -513,9 +453,9 @@ void uartCommTask(void const *argument) {
 				HAL_UART_Transmit_DMA(&huart1, raspTxBuf, ADXL_PACK_SIZE); // -> В Raspberry
 
 			} else if (sensors->source == RASP_UART_SRC) { //пакет от RaspberryPi - управление подсветкой и платой управления питанием
-				taskENTER_CRITICAL();
+//				taskENTER_CRITICAL();
 				cmdHandler(sensors->payload, sensors->size); //также пакет, имитирующий CMD_PWR_OFF по таймауту выключения Raspberry
-				taskEXIT_CRITICAL();
+//				taskEXIT_CRITICAL();
 
 			} else if (sensors->source == BL_AUTO_CONTROL_SRC) { //пакет авторегулирования подсветки
 				setTxMode(2);
@@ -527,7 +467,7 @@ void uartCommTask(void const *argument) {
 				__HAL_TIM_CLEAR_IT(&htim8, TIM_IT_UPDATE);
 				__HAL_TIM_SET_COUNTER(&htim8, 0);
 				HAL_TIM_Base_Start_IT(&htim8);
-				HAL_UART_Transmit_DMA(&huart6, sensors->payload, sensors->size);
+				HAL_UART_Transmit_IT(&huart6, sensors->payload, sensors->size);
 
 			} else if (sensors->source == CV_RESP_SOURCE) { //ответы от SourceSelector на команды управления питанием UART6
 
@@ -685,6 +625,71 @@ void uartCommTask(void const *argument) {
 			taskEXIT_CRITICAL();
 			HAL_UART_Transmit_DMA(&huart1, raspTxBuf, STD_PACK_SIZE);
 		}
+	}
+}
+
+void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
+{
+	uint8_t state = 0;
+	BaseType_t xHigherPriorityTaskWoken = 0;
+
+	if (huart->Instance == USART6) {
+
+		sensors_->size = Size;
+
+		switch (state) {
+
+		case 0:
+
+			if (currentVoltageRxBuf[0] == 0xAA){
+				state++;
+			} else {
+				state = 0;
+				break;
+			}
+
+		case 1:
+
+			if (sensors_->size != currentVoltageRxBuf[2]) {
+				state = 0;
+				break;
+			} else {
+				state++;
+			}
+
+		case 2:
+
+			switch (currentVoltageRxBuf[1]) {
+
+			case CV_PACK_ID:
+				HAL_TIM_Base_Stop_IT(&htim8);
+				__HAL_TIM_SET_COUNTER(&htim8, 0);
+				queueStatusByte1 &= ~0x80;
+				sensors_->source = CV_USART_SRC;
+				memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+				break;
+
+			case RASP_RESP_PACK_ID:
+				sensors_->source = CV_RESP_SOURCE;
+				memcpy((uint8_t*)sensors_->payload, currentVoltageRxBuf, CV_RESP_SIZE);
+				HAL_TIM_Base_Stop_IT(&htim13);
+				__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+				__HAL_TIM_SET_COUNTER(&htim13, 0);
+				break;
+
+			default:
+				state = 0;
+				break;
+			}
+			break;
+		}
+
+		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensors_, &xHigherPriorityTaskWoken) != pdTRUE) {
+		}
+		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);
+
+		HAL_UARTEx_ReceiveToIdle_IT(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+		state = 0;
 	}
 }
 

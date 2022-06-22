@@ -82,8 +82,6 @@ DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart1_tx;
 DMA_HandleTypeDef hdma_usart2_rx;
 DMA_HandleTypeDef hdma_usart2_tx;
-DMA_HandleTypeDef hdma_usart6_rx;
-DMA_HandleTypeDef hdma_usart6_tx;
 
 osThreadId defaultTaskHandle;
 osThreadId lightMeterHandle;
@@ -145,6 +143,8 @@ extern uint8_t breaksStateTelem;
 extern uint8_t queueStatusByte;
 extern uint8_t queueStatusByte1;
 //extern UBaseType_t mailInQueue;
+
+extern uint8_t destTempBuf[16];
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
@@ -945,15 +945,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream6_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
-  /* DMA2_Stream1_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream1_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream1_IRQn);
   /* DMA2_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream2_IRQn);
-  /* DMA2_Stream6_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA2_Stream6_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMA2_Stream6_IRQn);
   /* DMA2_Stream7_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream7_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream7_IRQn);
@@ -1173,7 +1167,6 @@ void setRxMode (uint8_t uartNo){
 }
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
-//	uint8_t i  =0;
 
 	if (huart->Instance == USART2) {
 		setRxMode(2);
@@ -1185,11 +1178,6 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart){
 			NVIC_SystemReset();
 		}
 	}
-//	if (huart->Instance == USART1) {
-//		for (i = 0; i < STD_PACK_SIZE; i++) {
-//			raspTxBuf[i] = 0;
-//		}
-//	}
 }
 
 
@@ -1204,19 +1192,23 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
 
 }
 
+
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-	if (__HAL_UART_GET_FLAG(huart, UART_FLAG_ORE) != RESET){
+	if ((__HAL_UART_GET_FLAG(huart, UART_FLAG_ORE) != RESET) ||
+			(__HAL_UART_GET_FLAG(huart, UART_FLAG_FE) != RESET) ||
+					(__HAL_UART_GET_FLAG(huart, UART_FLAG_NE) != RESET)){
 		huart->Instance->DR;
 	}
-	HAL_UART_DeInit(huart);
 
 	if (huart->Instance == USART1){
-		MX_USART1_UART_Init();
+		HAL_UART_AbortReceive(&huart1);
+		HAL_UART_AbortTransmit(&huart1);
 		HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
 	} else if (huart->Instance == USART6){
-		MX_USART6_UART_Init();
-		HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+		HAL_UART_AbortReceive_IT(huart);
+		HAL_UART_AbortTransmit_IT(huart);
+		HAL_UARTEx_ReceiveToIdle_IT(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 	}
 }
 /* USER CODE END 4 */
@@ -1235,8 +1227,7 @@ void StartDefaultTask(void const * argument)
 
 	__HAL_UART_ENABLE_IT(&huart1, UART_IT_IDLE);
 	HAL_UART_Receive_DMA(&huart1, raspRxBuf, RASP_RX_BUF_SIZE);
-	__HAL_UART_ENABLE_IT (&huart6, UART_IT_IDLE);
-	HAL_UART_Receive_DMA(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+	HAL_UARTEx_ReceiveToIdle_IT(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 
 	/* Infinite loop */
 	for (;;) {
