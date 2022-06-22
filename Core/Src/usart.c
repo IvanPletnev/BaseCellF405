@@ -59,7 +59,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 74;
+uint8_t misFirmwareVersion1 = 76;
 uint32_t heapFreeSize = 0;
 
 extern uint8_t raspOffState;
