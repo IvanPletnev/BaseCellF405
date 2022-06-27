@@ -61,6 +61,7 @@ uint8_t cvStatusByteExtern = 0;
 uint8_t misFirmwareVersion0 = 6;
 uint8_t misFirmwareVersion1 = 77;
 uint32_t heapFreeSize = 0;
+uint32_t packetErrorCounter = 0;
 
 extern uint8_t raspOffState;
 extern osMailQId qEepromHandle;
@@ -650,8 +651,11 @@ void HAL_UARTEx_RxEventCallback(UART_HandleTypeDef *huart, uint16_t Size)
 
 		case 1:
 
-			if (sensors_->size != currentVoltageRxBuf[2]) {
+			if ((sensors_->size != currentVoltageRxBuf[2]) || get_check_sum(currentVoltageRxBuf, Size) != currentVoltageRxBuf[Size - 2]) {
 				state = 0;
+				HAL_TIM_Base_Stop_IT(&htim8);
+				__HAL_TIM_SET_COUNTER(&htim8, 0);
+				++packetErrorCounter;
 				break;
 			} else {
 				state++;

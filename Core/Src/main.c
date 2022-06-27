@@ -172,6 +172,8 @@ volatile uint32_t timeoutCnt = 0;
 volatile uint8_t raspRestartFlag = 0;
 
 static volatile uint8_t cvCounter = 0;
+uint32_t timeOutCounter = 0;
+uint32_t uartErrorCounter = 0;
 
 float pwmValue;
 uint16_t pwm_Value;
@@ -1200,7 +1202,7 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 					(__HAL_UART_GET_FLAG(huart, UART_FLAG_NE) != RESET)){
 		huart->Instance->DR;
 	}
-
+	++uartErrorCounter;
 	if (huart->Instance == USART1){
 		HAL_UART_AbortReceive(&huart1);
 		HAL_UART_AbortTransmit(&huart1);
@@ -1677,7 +1679,17 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 	/*------------------------------------------------------------------------------------------*/
 
 	if (htim->Instance == TIM8) { //Сюда мы попадаем, если 200ms нет ответа от SourceSelector
-
+		HAL_TIM_Base_Stop_IT(&htim8);
+		++timeOutCounter;
+		if (timeOutCounter >= 10){
+			timeOutCounter = 0;
+			HAL_UART_AbortReceive_IT(&huart6);
+			HAL_UART_AbortTransmit_IT(&huart6);
+			HAL_UART_DeInit(&huart6);
+			MX_USART6_UART_Init();
+			HAL_UARTEx_ReceiveToIdle_IT(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
+		}
+		__HAL_TIM_SET_COUNTER(&htim8, 0);
 		for (cvCounter = 0; cvCounter < CV_RX_BUF_SIZE; cvCounter++) {
 			currentVoltageRxBuf[cvCounter] = 0;
 		}
