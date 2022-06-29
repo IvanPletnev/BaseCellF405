@@ -148,6 +148,7 @@ extern uint8_t destTempBuf[16];
 
 uint16_t VirtAddVarTab[NB_OF_VAR];
 uint8_t tempSensorState = 0;
+uint8_t tempSensorState1 = 0;
 uint8_t sensorsOnFlag = 1;
 
 volatile unsigned long ulHighFrequencyTimerTicks;
@@ -1348,7 +1349,7 @@ void tempMeasTask(void const * argument)
 
 		if (tempMutexStatus0 == osOK) {
 			tempSensorState = TLA2024_Read(0, buffer0);
-			TLA2024_Read(2, buffer2);
+			tempSensorState1 = TLA2024_Read(2, buffer2);
 			osMutexRelease(I2C2MutexHandle);
 		}
 
@@ -1374,6 +1375,18 @@ void tempMeasTask(void const * argument)
 		buffer0[1] = (uint8_t)(temperature0 & 0x00FF);
 		buffer2[0] = (uint8_t)((temperature2 & 0xFF00) >> 8);
 		buffer2[1] = (uint8_t)(temperature2 & 0x00FF);
+
+		if (tempSensorState == TEMP_SENSOR_FAIL) {
+			queueStatusByte1 |= 0x01;
+		} else {
+			queueStatusByte1 &= ~0x01;
+		}
+
+		if (tempSensorState1 == TEMP_SENSOR_FAIL) {
+			queueStatusByte1 |= 0x02;
+		} else {
+			queueStatusByte1 &= ~0x02;
+		}
 
 		if ((tempSensorState == TEMP_SENSOR_FAIL) && (cvStatusByteExtern & 0x06)) {
 

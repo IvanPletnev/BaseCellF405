@@ -59,7 +59,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 77;
+uint8_t misFirmwareVersion1 = 79;
 uint32_t heapFreeSize = 0;
 uint32_t packetErrorCounter = 0;
 

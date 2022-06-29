@@ -10,6 +10,7 @@
 #define DISCRETE		10
 
 extern I2C_HandleTypeDef hi2c1;
+extern uint8_t queueStatusByte1;
 
 uint16_t debugLightLevel0 = 0;
 uint16_t debugLightLevel1 = 0;
@@ -129,15 +130,21 @@ void lightMeterTask(void const * argument) {
 		}
 
 		if (status0) {
+			queueStatusByte1 &= ~0x04;
 			APDS9960_ReadRedLight(0, red0);
 			APDS9960_ReadGreenLight(0, green0);
 			APDS9960_ReadBlueLight(0, blue0);
+		} else {
+			queueStatusByte1 |= 0x04;
 		}
 
 		if (status1) {
+			queueStatusByte1 &= ~0x08;
 			APDS9960_ReadRedLight(1, red1);
 			APDS9960_ReadGreenLight(1, green1);
 			APDS9960_ReadBlueLight(1, blue1);
+		} else {
+			queueStatusByte1 |= 0x08;
 		}
 
 		if (!status0 && !status1) {
