@@ -180,6 +180,7 @@ float pwmValue;
 uint16_t pwm_Value;
 uint16_t targetValue;
 BH1750_device_t* monitor;
+uint32_t i2c2ErrorCode = 0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -274,6 +275,8 @@ int main(void)
 	monitor = BH1750_init_dev_struct(&hi2c3, "monitor", true);
 	BH1750_init_dev(monitor);
 	HAL_TIM_PWM_Start(&htim10, TIM_CHANNEL_1);
+
+
 
   /* USER CODE END 2 */
 
@@ -460,7 +463,7 @@ static void MX_I2C2_Init(void)
 
   /* USER CODE END I2C2_Init 1 */
   hi2c2.Instance = I2C2;
-  hi2c2.Init.ClockSpeed = 400000;
+  hi2c2.Init.ClockSpeed = 100000;
   hi2c2.Init.DutyCycle = I2C_DUTYCYCLE_2;
   hi2c2.Init.OwnAddress1 = 0;
   hi2c2.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
@@ -1214,6 +1217,12 @@ void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 		HAL_UARTEx_ReceiveToIdle_IT(&huart6, currentVoltageRxBuf, CV_RX_BUF_SIZE);
 	}
 }
+
+
+void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
+{
+	i2c2ErrorCode = HAL_I2C_GetError(&hi2c2);
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -1342,6 +1351,7 @@ void tempMeasTask(void const * argument)
 	sensorsData *sensors = &xSensors;
 
 	osDelay(500);
+	__HAL_I2C_ENABLE_IT(&hi2c2, I2C_IT_ERR);
 	/* Infinite loop */
 	for (;;) {
 
@@ -1352,6 +1362,7 @@ void tempMeasTask(void const * argument)
 			tempSensorState1 = TLA2024_Read(2, buffer2);
 			osMutexRelease(I2C2MutexHandle);
 		}
+
 
 		temperature0 = (int16_t)buffer0[0] << 8;
 		temperature0 |= buffer0[1];
@@ -1409,22 +1420,30 @@ void tempMeasTask(void const * argument)
 			}
 		}
 
-		sensors->source = TLA2024_TASK_SOURCE;
-		sensors->size = TLA2024_SIZE;
-		memset(sensors->payload, 0, 16);
-		memcpy (sensors->payload, buffer0, 2);
-		memcpy (sensors->payload+4, buffer2, 2);
-		if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
-
-		}
-
-		if (sensorsOnFlag) {
-			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
+		if (!tempSensorState && !tempSensorState1) {
+			if (hi2c2.ErrorCode & 0x00000200){
+				HAL_I2C_DeInit(&hi2c2);
+				osDelay(10);
+				HAL_I2C_Init(&hi2c2);
+			}
 		} else {
-			HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
-		}
+			sensors->source = TLA2024_TASK_SOURCE;
+			sensors->size = TLA2024_SIZE;
+			memset(sensors->payload, 0, 16);
+			memcpy (sensors->payload, buffer0, 2);
+			memcpy (sensors->payload+4, buffer2, 2);
+			if (xQueueSend(qSensorsHandle, (void*) &sensors, 5) != pdTRUE) {
 
-		osDelay(500);
+			}
+
+			if (sensorsOnFlag) {
+				HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, SET);
+			} else {
+				HAL_GPIO_WritePin(SENSORS_PWR_GPIO_Port, SENSORS_PWR_Pin, RESET);
+			}
+
+			osDelay(500);
+		}
 	}
   /* USER CODE END tempMeasTask */
 }

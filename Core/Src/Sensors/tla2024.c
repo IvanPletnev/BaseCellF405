@@ -218,9 +218,9 @@ void init_send_buffer(uint8_t nSensor, uint8_t mux, uint8_t dr, uint8_t pga)
 
 uint8_t TLA2024_single_shot_conv_start(uint8_t nSensor)
 {
-	if (HAL_I2C_Master_Transmit(&hi2c2, sensors[nSensor]<<1 , sensors_send_buf[nSensor], 3, 5) == HAL_BUSY)
+	if (HAL_I2C_Master_Transmit(&hi2c2, sensors[nSensor]<<1 , sensors_send_buf[nSensor], 3, 5) != HAL_OK)
 	{
-		HAL_I2C_MspInit(&hi2c2);
+//		HAL_I2C_MspInit(&hi2c2);
 		return STATUS_FAIL;
 	}
 
@@ -248,7 +248,7 @@ uint8_t TLA2024_single_shot_conv_set_point(uint8_t nSensor, uint8_t point_reg)
 {
 	data_buf[0] = point_reg;
 	data_buf[1] = 0;
-	if (HAL_I2C_Master_Transmit(&hi2c2, sensors[nSensor]<<1, data_buf, 1, 5) == HAL_BUSY)
+	if (HAL_I2C_Master_Transmit(&hi2c2, sensors[nSensor]<<1, data_buf, 1, 5) != HAL_OK)
 	{
 		return STATUS_FAIL;
 	}

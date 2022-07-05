@@ -59,7 +59,7 @@ uint8_t misStatusByte1 = 0;
 uint8_t cvStatusByteExtern = 0;
 
 uint8_t misFirmwareVersion0 = 6;
-uint8_t misFirmwareVersion1 = 79;
+uint8_t misFirmwareVersion1 = 80;
 uint32_t heapFreeSize = 0;
 uint32_t packetErrorCounter = 0;
 
@@ -136,6 +136,7 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 	case 1:
 
 		if (source[1] == RASP_IN_PACK_ID) {
+			state++;
 			state++;
 			destTempBuf[1] = BL_OUT_PACK_ID;
 			cmdTempBuf[1] = CV_REQ_PACK_ID;
