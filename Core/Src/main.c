@@ -142,6 +142,7 @@ extern uint8_t cvStatusByteExtern;
 extern uint8_t breaksStateTelem;
 extern uint8_t queueStatusByte;
 extern uint8_t queueStatusByte1;
+extern uint8_t cmdTempBuf[16];
 //extern UBaseType_t mailInQueue;
 
 extern uint8_t destTempBuf[16];
@@ -1703,6 +1704,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 		sensor1->size = RASP_RESP_SIZE;
 		sensor1->payload[6] = get_check_sum((uint8_t*)sensor1->payload, 8);
 		memcpy((uint8_t*)sensor1->payload, cvTimeoutResponse, 8);
+		sensor1->payload[3] = cmdTempBuf[3];
 		if (xQueueSendFromISR(qSensorsHandle, (void *)&sensor1, &xHigherPriorityTaskWoken) != pdTRUE) {
 		}
 		portEND_SWITCHING_ISR(xHigherPriorityTaskWoken);

@@ -331,9 +331,9 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
-			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
-			__HAL_TIM_SET_COUNTER(&htim7, 0);
-			HAL_TIM_Base_Start_IT(&htim7);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
 			break;
 
 		case CMD_BACKLIGHT_ON:
@@ -344,9 +344,9 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
-			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
-			__HAL_TIM_SET_COUNTER(&htim7, 0);
-			HAL_TIM_Base_Start_IT(&htim7);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
 			break;
 
 		case CMD_PWR_ON:
@@ -357,9 +357,9 @@ usartErrT cmdHandler (uint8_t *source, uint8_t size) {
 			cmdTempBuf[4] = get_check_sum(cmdTempBuf, CV_REQ_SIZE);
 			setTxMode(6);
 			HAL_UART_Transmit_IT(&huart6, cmdTempBuf, CV_REQ_SIZE);
-			__HAL_TIM_CLEAR_IT(&htim7, TIM_IT_UPDATE);
-			__HAL_TIM_SET_COUNTER(&htim7, 0);
-			HAL_TIM_Base_Start_IT(&htim7);
+			__HAL_TIM_CLEAR_IT(&htim13, TIM_IT_UPDATE);
+			__HAL_TIM_SET_COUNTER(&htim13, 0);
+			HAL_TIM_Base_Start_IT(&htim13);
 			break;
 
 		case CMD_ZERO_ON:
