@@ -1422,9 +1422,11 @@ void tempMeasTask(void const * argument)
 		}
 
 		if (!tempSensorState && !tempSensorState1) {
-			if (hi2c2.ErrorCode & 0x00000200){
+			if (hi2c2.ErrorCode){
 				HAL_I2C_DeInit(&hi2c2);
+				__HAL_RCC_I2C2_FORCE_RESET();
 				osDelay(10);
+				__HAL_RCC_I2C2_RELEASE_RESET();
 				HAL_I2C_Init(&hi2c2);
 			}
 		} else {
